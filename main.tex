@@ -1,0 +1,98 @@
+\documentclass[fyp]{socreport}
+\usepackage{hyperref}
+\usepackage{graphicx} % to insert images
+\usepackage{float}
+%%% code block setups
+\usepackage[newfloat]{minted}
+\usepackage{xcolor} % to access the named colour LightGray
+\definecolor{LightGray}{gray}{0.9}
+\usepackage{caption}
+\newenvironment{code}{\captionsetup{type=listing}}{}
+\SetupFloatingEnvironment{listing}{name=Code}
+%%% code block setups
+\usepackage{fullpage}
+\usepackage{multirow}
+\usepackage{longtable}
+\usepackage{amsmath}
+
+\begin{document}
+\pagenumbering{roman}
+\title{Competition Platform for AI Tasks}
+\author{Tan Yuanhong}
+\projyear{2021/22}
+\projnumber{H247080}
+\advisor{Dr. Akshay Narayan, Prof. Leong Tze Yun}
+\deliverables{
+	\item Report: 1 Volume
+	\item Source Code: 1 Git Repository}
+\maketitle
+\begin{abstract}
+Entering the second decade of the 21st century, machine learning and artificial intelligence is the new must-have for computer science education. However, while the data-oriented tasks like classification and regression have well-adopted platforms such as Kaggle, simulation-oriented tasks that are most common for reinforcement learning (RL) algorithms are yet to have a feature-complete online judging solution. This project aims to build a complete solution that is extensible, scalable, and easy-to-use. It covers four critical components of judging RL algorithms: a simulation environment framework, an auto-grading framework, a scalable and secure code-execution unit, and a modern web application for user interaction. This project greatly improves the usability and performance of existing internal platform aiVLE 1.0 by providing comprehensive documentation and much better utilization and coordination of computation resources. Experimental results show that our new system provides fair task distribution among worker nodes, over 90\% of resource utilization and 82.77\% to 90.71\% scaling efficiency depending on the configuration. 
+
+\begin{project-nature}
+	Implementation, Experimentation, Simulation
+\end{project-nature}
+\begin{keywords}
+    \item Artificial Intelligence
+	\item Machine Learning
+\end{keywords}
+\begin{implement}
+	Ubuntu 20.04, Firejail 0.9.68, Python 3.8, Django 4.0, Celery 5.2
+\end{implement}
+\end{abstract}
+
+% \begin{acknowledgement}
+%   I would like to thank my friends, families and advisors.
+%   Without them, I would not have be able to complete this project.
+% \end{acknowledgement}
+
+\listoffigures 
+\listoftables
+\tableofcontents 
+
+\include{ch-introduction}
+\include{ch-project_objective}
+\include{ch-literature_review}
+\include{ch-design_and_impl}
+\include{ch-deployment_and_testing}
+\include{ch-conclusion}
+
+% \chapter{Future Plans}
+% \label{ch:future-plans}
+% \section{Support and Improvement}
+% As mentioned in Chapter~\ref{ch:design-and-impl}, I reached the targets set for the first two stages and has delivered a system that satisfies the basic requirements of CS4246 teaching. Despite our best effort, one semester is not enough to implement every feature that we can think of. Therefore, the first planned item for semester 2 is to support the use cases of aiVLE 2.0 and add more features.
+
+% For the framework (aiVLE Gym and Grader), there is an ongoing collaboration with Ho Hol Yin for a unified testbed for AI teaching and research (project ID: H247060). This will hopefully be the first concrete demonstration of these frameworks and I will support Hol Yin throughout his development and make improvements to my frameworks accordingly.
+
+% For the platform (aiVLE Worker and Web), CS4246 for the next semester will possibly transition to the new system. There will be more stress testing and security penetration testing for production use of the system. Bug fixes and quality of life improvements will be introduced on the fly when the system is in active use. There are also several new features planned for the next semester:
+
+% \begin{enumerate}
+%     \item More comprehensive evaluation queue support: currently any evaluation job is assigned to either public CPU queue or public GPU queue. We need to support private queue that is operated by external users when the platform goes public.
+%     \item Resource sensitive concurrency management: currently the number of concurrent jobs allowed on each worker is fixed. Although having worker-level concurrency itself is already a huge improvement over the old system, the goal is to dynamically adjust the concurrency limit to fully utilize the hardware without manual configuration.
+%     \item Platform support for two-agent tasks (e.g., Gobang, Go, Reversi, etc.): a matchmaker and Elo-based ranking system.
+%     \item Record and export match history.
+%     \item Visualization of match history.
+%     \item Course management interface. Current aiVLE 2.0 relies on default admin panels provided by Django and Django REST Framework, which are not particularly user-friendly.
+% \end{enumerate}
+
+% \subsection{Beyond AI Education}
+% Although the project is titled as a competition platform for AI education, half of its effort focuses on providing an easy-to-use and standardized RL environment framework and evaluation tool that natively supports multi-agent tasks. As suggested by my supervisors Prof. Leong and Dr. Narayan, there are several areas I might explore with these tools:
+% \begin{enumerate}
+%     \item Package the aiVLE Gym and dependencies to ensure software-level reproducibility – given a specific version of aiVLE environment, a Docker image will harden all dependency and driver versions.
+%     \item Extend aiVLE Gym to support inter-agent communication to fill the gap of benchmarking collaborative RL algorithms.
+%     \item Collect some classic multi-agent tasks and implement some classic RL algorithms on these tasks to validate the potential of using these frameworks as a benchmark for future tasks and algorithms. The collaboration with Hol Yin is relevant as well.
+%     \item Make aiVLE a one-stop solution of sharing RL environment and benchmarking RL algorithms by adding a section in the web platform for users to 1) submit environments, 2) submit and evaluate agents to respective environments, and 3) compare agent performance.
+% \end{enumerate}
+
+
+\bibliographystyle{socreport}
+\bibliography{socreport}
+
+\appendix
+\chapter{Code}
+
+% \chapter{Proofs}
+% In this appendix, we present alternate, longer, but more interesting proof 
+% of correctness of our algorithm.  This proof is based on induction and proof
+% by contradiction.
+\end{document}
