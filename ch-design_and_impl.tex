@@ -1,31 +1,27 @@
 \chapter{Design and Implementation}
 \label{ch:design-and-impl}
-Referring to the roadmap of this project, during the first semester I finished stage 1 (framework) and stage 2 (platform). Due to the page length restriction, I am providing an overview and one notable design detail of these subprojects in this report. Additional details on API documentation and design considerations can be found in these external documents:
-\begin{enumerate}
-    \item \href{https://yuanhong.larksuite.com/docs/docusSYdnLXZBojin39b8DGzKMT}{Gym} (Password: mLpj)
-    \item \href{https://yuanhong.larksuite.com/docs/docuseeHRJWAMV3p3uL7yYCOeYx}{Grader} (Password: ZELI)
-    \item \href{https://yuanhong.larksuite.com/docs/docussD8ik4yBXShA5kPyRGhgdg}{Worker} (Password: qgF2)
-    \item \href{https://yuanhong.larksuite.com/docs/docusfWZk1oYG8qkEMG7y2oxkye}{Web} (Password: Z3Wn)
-\end{enumerate}
+Following the nomenclature defined in Section~\ref{ch:literature-review-related-work-ai-competition-platforms}, we will call the new system aiVLE 2.0 henceforth. Do note that aiVLE 2.0 also refers to the new system architecture as a whole – every sub-project has an independent versioning that does not necessarily share the major revision\footnote{This is because components like aiVLE Gym and aiVLE Grader does not exist in aiVLE 1.0.} number 2. 
 
-Following the nomenclature defined in Section~\ref{ch:literature-review-related-work-ai-competition-platforms}, we will call the new system aiVLE 2.0 henceforth. Do note that aiVLE 2.0 also refers to the new system architecture as a whole – every subproject has an independent versioning that does not necessarily share the major revision number 2. This is because components like aiVLE Gym and aiVLE Grader does not exist in aiVLE 1.0.
+As mentioned in Section~\ref{s:project-objective-problem-statement}, there are four components in aiVLE 2.0: aiVLE Gym, Grader, Worker and Web. As a high-level overview, Figure~\ref{fig:architecture-overview} shows the relationship between the components: the system can be roughly divided into client-side (where students and lecturers write and run the agents) and server-side (where the platform hosts the competition and evaluates the submissions). On the client side, we have \hyperref[ch:aivle-gym]{\textbf{aiVLE Gym}} responsible for simulation. \hyperref[ch:aivle-grader]{\textbf{aiVLE Grader}} calls the agent implementation to interact with the environment and record the simulations. All these arbitrary code execution happens inside the security sandbox of \hyperref[ch:aivle-worker]{\textbf{aiVLE Worker}}, ensuring fair resource allocation and secure code execution. On the server side, we have a worker cluster consisting of many worker nodes, communicating with \hyperref[ch:aivle-web]{\textbf{aiVLE Web}} in an orchestrated manner. This cluster is designed to be fault tolerant and massively scalable. And of course, aiVLE Web also provides a frontend that you can access from a browser.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/architecture-overview.png}
+    \caption{aiVLE 2.0 Architecture Overview}
+    \label{fig:architecture-overview}
+\end{figure}
+
+In this chapter, we will discuss about the design and implementation of all these four components in detail, in the order of Gym, Grader, Worker and finally aiVLE Web. In fact, this is also the chronological order of development: the later components have dependencies on earlier ones, and the earlier ones function just as expected without reliance on the later ones. For example, aiVLE Gym can be used as general-purpose multi-agent environment framework outside of the aiVLE 2.0 platform.
 
 \section{aiVLE Gym - Separating Agents from Environment}
 \label{ch:aivle-gym}
-I have released a stable version of aiVLE Gym with all planned features implemented. \href{https://github.com/edu-ai/aivle-gym}{The source} consists of ~1K lines of code, including several example environments and full documentation.
+I have released a stable version of aiVLE Gym with all planned features implemented. \href{https://github.com/edu-ai/aivle-gym}{The source} consists of $\sim$1K lines of code, including several example environments and full documentation. The package is published to \href{https://test.pypi.org/project/aivle-gym/}{PyPI} so that aiVLE Gym can be installed and imported like any other Python package.
 
 \subsection{Motivation}
 aiVLE Gym makes multi-agent competition possible by separating agents from the environment. In a two-agent OpenAI Gym task, we write agent code as shown in Code~\ref{code:two-agent-example}:
 
 \begin{code}
-\begin{minted}[
-frame=lines,
-framesep=2mm,
-baselinestretch=1.2,
-bgcolor=LightGray,
-fontsize=\footnotesize,
-linenos
-]{python}
+\begin{minted}[frame=lines,framesep=2mm,baselinestretch=1.2,bgcolor=LightGray,fontsize=\footnotesize,linenos]{python}
 env = gym.make("PongDuel-v0") # Two-player Ping Pong game
 for ep_i in range(100):
     done_n = [False for _ in range(env.n_agents)]
@@ -46,7 +42,7 @@ env.close()
 \label{code:two-agent-example}
 \end{code}
 
-Note that in a multi-agent scenario, observation, reward and done are all vectors - each element corresponds to one of the agents. Similarly, when you call env.step(), you should provide actions for every agent in this simulation. Such design is acceptable when we perform these multi-agent experiments offline. However, in a competition setting, when it comes to multi-agent tasks, you cannot make decisions for your opponent agents. Therefore, separating agents from the environment simulation is necessary. From the perspective of each agent, it is just like a single-agent environment – the only difference is that the environment is affected by actions taken by other agents as well. Figure~\ref{fig:opanai-gym-multi-arch} and Figure~\ref{fig:aivle-gym-multi-arch} show the architectural differences between OpenAI Gym and aiVLE Gym (each colored box represents a separate process; solid arrows represent inter-process communication):
+Note that in a multi-agent scenario, \texttt{observation}, \texttt{reward} and \texttt{done} are all vectors - each element corresponds to one of the agents. Similarly, when you call \texttt{env.step()}, you should provide \texttt{action}s for every agent in this simulation. Such design is acceptable when we perform these multi-agent experiments offline. However, in a competition setting, when it comes to multi-agent tasks, you cannot make decisions for your opponent agents. Therefore, separating agents from the environment simulation is necessary. From the perspective of each agent, it is just like a single-agent environment – the only difference is that the environment is affected by actions taken by other agents as well. Figure~\ref{fig:opanai-gym-multi-arch} and Figure~\ref{fig:aivle-gym-multi-arch} show the architectural differences between OpenAI Gym and aiVLE Gym (each colored box represents a separate process; solid arrows represent inter-process or network communication):
 \begin{figure}[H]
     \centering
     \includegraphics{images/opanai-gym-multi-arch.png}
@@ -61,19 +57,20 @@ Note that in a multi-agent scenario, observation, reward and done are all vector
 \end{figure}
 
 \subsection{Design Goal}
-Unless mentioned otherwise, all design goals in the following sections are achieved in the released implementation. 
+Unless mentioned otherwise, all design goals in this chapter are achieved in the released implementation. 
 
 The design goal of aiVLE Gym is to keep full compatibility with OpenAI Gym on the agent side. On the environment side, it lets you convert from existing OpenAI Gym environments with little adaptation. More specifically:
 
 In single-agent case, on the agent side, traditional environment (simulation happens within agent process) and aiVLE environment (simulation happens outside of agent process) should be interchangeable. On the environment side, author can reuse existing OpenAI Gym compatible environment by implementing a serializer that serializes \texttt{action}, \texttt{observation}, and \texttt{info} to JSON compatible objects.
 
-In multi-agent case, on the agent side, the APIs behaves just like normal single-agent OpenAI Gym environment (i.e., interchangeable). On the environment side, author can reuse existing ma-gym~\cite{magym} environment by implementing a serializer along with several metadata fields. 
+In multi-agent case, on the agent side, the APIs behaves just like normal single-agent OpenAI Gym environment. On the environment side, author can reuse existing ma-gym environment~\cite{magym} by implementing a serializer along with several metadata fields. 
 
 \subsection{Agent-Environment Communication}
-Since agents and environments are separated, there needs to be a communication channel between the two. aiVLE Gym uses a lightweight yet high-performance messaging library ZeroMQ~\cite{zeromq}, which has comprehensive support for many synchronous and asynchronous messaging patterns that are essential to this project. There are two primary challenges for multi-agent tasks when it comes to agent-environment communication:
+\label{ss:agent-env-communication}
+Since agents and environment are separated, there needs to be an inter-process communication channel between them. aiVLE Gym uses a lightweight yet high-performance messaging library ZeroMQ~\cite{zeromq}, which has comprehensive support for many synchronous and asynchronous messaging patterns that are essential to this project. There are two primary challenges for multi-agent tasks when it comes to agent-environment communication:
 \begin{enumerate}
-    \item The judge should receive and respond to requests asynchronously - it needs to wait for all agents' actions before stepping forward in the environment, then decide what observations/rewards/done to respond to each of the agents.
-    \item Certain operations (e.g., reset) must be performed strictly once for each episode, but since each agent will initialize the episode on their own, judge-side will unavoidably receive multiple requests.
+    \item The judge should receive and respond to requests asynchronously - it needs to wait for all agents' actions before stepping forward in the environment, then decide what observations/rewards to respond to each of the agents.
+    \item Certain operations (e.g., resetting the simulation) must be performed strictly once for each episode, but since each agent will initialize the episode on their own, judge-side will unavoidably receive multiple requests.
 \end{enumerate}
 
 To summarize, the judge-side environment needs to implement a "barrier" synchronization mechanism that not only realizes synchronous rendezvous of agent requests, but also performs additional tasks upon the "first-comer" and "last-leaver". 
@@ -86,23 +83,23 @@ Therefore, we propose the deterministic finite automaton (DFA) as shown in Figur
     \label{fig:aivle-gym-multi-dfa}
 \end{figure}
 
-This DFA is key to keeping complicated communication details transparent to both agent and environment logic – both can write common synchronous code while the framework deals with the underlying asynchronous logic. Details of this DFA and messaging patterns involved can be found in the \href{https://google.com}{aiVLE Gym appendix}.
+This DFA is key to keeping complicated communication details transparent to both agent and environment logic – both can write common synchronous code while the framework deals with the underlying asynchronous logic. Details of this DFA and messaging patterns involved can be found in the Appendix~\ref{as:aivle-gym_dfa}.
 
 \section{aiVLE Grader - Evaluating Agents Using Test Suites}
 \label{ch:aivle-grader}
-I have released a stable version of aiVLE Grader with 1) normal OpenAI Gym, 2) aiVLE Gym single-agent, and 3) aiVLE Gym multi-agent environment support. The codebase consists of ~600 lines of framework code and ~300 lines of example test suites for all three supported frameworks.
+I have released a stable version of aiVLE Grader with 1) normal OpenAI Gym, 2) aiVLE Gym single-agent, and 3) aiVLE Gym multi-agent environment support. The codebase consists of $\sim$600 lines of framework code and $\sim$300 lines of example test suites for all three supported use cases. Similar to aiVLE Gym, the package is released to \href{https://test.pypi.org/project/aivle-grader/}{PyPI} for in-production usage.
 
 \subsection{Design Goal}
-Unlike competitive programming style problems or machine learning prediction tasks, evaluating RL agents is much more complicated than comparing students’ output against a standard answer. With the common programming interface provided by OpenAI/aiVLE Gym, on top of which, we may also create a framework that standardizes/modularizes the initialization, execution, and conclusion of RL agent evaluation. The ultimate goal of this framework, when writing a grader for agents in any OpenAI/aiVLE Gym environment, is to:
+Unlike competitive programming style problems or machine learning prediction tasks, evaluating RL agents is much more complicated than comparing students’ output against a standard answer. Fortunately, with the common programming interfaces provided by OpenAI/aiVLE Gym, on top of them we may create a framework that standardizes/modularizes the initialization, execution, and conclusion of RL agent evaluation. The ultimate goal of this framework, when writing a grader for agents in any OpenAI/aiVLE Gym environment, is to:
 \begin{enumerate}
     \item Make the built-in components so complete that for most use cases using built-in ones would be sufficient.
     \item Make each component self-contained without complicated inter-dependencies (i.e., following the single responsibility principle) when writing a custom component.
 \end{enumerate}
 
 \subsection{Key Abstractions}
-There are three key abstractions to aiVLE Grader: \textit{agent}, \textit{evaluator}, and \textit{test} case.
+There are three key abstractions to aiVLE Grader: \textit{agent}, \textit{evaluator}, and \textit{test case}.
 
-\textit{Agent} only has two methods: "reset" to reset internal states, "step" to return an action from provided observation. It is flexible enough to allow agents to memorize the history, whilst restrictive enough to prohibit agents from modifying the innerworkings of the environment.
+\textit{Agent} only has two methods: "reset" to reset internal states, "step" to return an action from provided observation. It is flexible enough to allow agents to memorize the history, whilst restrictive enough to prohibit agents from modifying the inner-workings of the environment.
 
 \textit{Evaluator} records the entire execution process and produces a score when the session terminates. It utilizes the common pattern of most RL tasks (see Figure~\ref{fig:obr-loop}): each session consists of many episodes, and each episode consists of many concrete steps. By inserting hook functions to these critical points, an evaluator practically records everything about the evaluation session. 
 
@@ -116,26 +113,29 @@ There are three key abstractions to aiVLE Grader: \textit{agent}, \textit{evalua
 
 \section{aiVLE Worker - Secure and Scalable Grading Client}
 \label{ch:aivle-worker}
-I have released a stable version of aiVLE Worker with an active CPU-only instance deployed on the server along with aiVLE Web. It is also tested on GPU machines for CUDA compatibility (GTX 1050Ti for CUDA 10, RTX 3070 for CUDA 11). The codebase consists of ~600 LoC, also with examples and full documentation.
+I have released the second stable version of aiVLE Worker. The most significant upgrade of the second release is its resource awareness (see Section~\ref{ss:aivle-worker-resource-awareness}). It is validated on both CPU-only machines and GPU nodes with CUDA drivers (GTX 1050Ti for CUDA 10, RTX 3070 for CUDA 11). Moreover, it has been deployed and tested on several GPU nodes of the SoC Compute Cluster (see Section~\ref{s:deployment}). The codebase consists of $\sim$700 LoC, also with examples and detailed documentation. 
+
+Unlike aiVLE Gym and Grader that are packages that are meant to be imported in other scripts, aiVLE Worker is a self-contained client that is runnable out-of-the-box. Thus aiVLE Worker is published to \href{https://test.pypi.org/project/aivle-worker/}{PyPI} as a command-line tool. Users may install aiVLE Worker from PyPI like any other Python-based program.
 
 \subsection{Design Goal}
-As the section title suggests, security and scalability are what aiVLE worker aims to achieve. For security, the implementation is expected to achieve:
+\label{ss:aivle-worker-design-goal}
+For security, the implementation is expected to achieve:
 \begin{enumerate}
     \item File access restriction: agent program should have no access to directories that may contain sensitive data (e.g., private keys), and should have read only access to files necessary for its execution (e.g., Python binary, dependencies, agent, and environment source code).
     \item Network restriction: agent program should have no access to the Internet. Otherwise, (1) it may benefit from extra computation resources; (2) it may send out confidential runtime details (e.g., configuration of simulation environment) that allow users to fine-tune their program; both of which make the competition unfair.
-    \item Resource limit, including RAM limit, CPU affinity (core count) and CPU time limit.
+    \item Resource limit: agent program should be terminated and reported if it exceeds RAM limit, VRAM limit or time limit.
 \end{enumerate}
 
-As for scalability, it depends on both the scheduling on the server-side and the execution on the worker-side. In the context of scaling workers easily, a client that requires little permission and setup would be extremely helpful – so that we can deploy the worker on shared GPU servers or even lab machines. What we expect from this solution are:
+For scalability, in addition to the task queue system that manages all worker nodes and distributes evaluation jobs fairly and efficiently to the workers (see Section~\ref{ch:aivle-web_highly-available-task-queue}), on the worker side, a client that requires little permission and setup would be extremely helpful. It benefits horizontal scalability because 1) adding new worker nodes is easier, 2) more machines can be used as worker nodes (e.g., shared GPU servers, programming lab PCs). Thus, what we expect from this solution are:
 \begin{enumerate}
     \item Managed concurrency: it should be able to run as many evaluation jobs concurrently as the hardware resource permits, while being able to detect and terminate processes that consume excessive RAM/VRAM. For more details please refer to Section~\ref{ss:aivle-worker-resource-awareness}.
     \item Minimal permission requirement: if we have access to run the submission locally, the environment should be able to operate as a worker node (i.e., sudo is not required).
-    \item Minimal dependency requirement: any Linux machine with Python/Virtualenv/Pip should be able to run the worker client.
+    \item Minimal dependency requirement: any Linux machine with Python should be able to run the worker client.
     \item Moderate overhead: compared to traditional OJ, aiVLE can trade some overhead (both startup and runtime) for absolute essentials like GPU support. However, to achieve a certain level of throughput, crazy warmup time like several minutes is still unacceptable.
 \end{enumerate}
 
 \subsection{Security Solution}
-For security, I compared three mainstream security solutions: 1) virtual machine (VM) such as Virtualbox, 2) container such as Docker/Podman, and 3) sandbox such as Firejail. The main areas of interest are compared in Table~\ref{tab:security-solutions}:
+There are three mainstream security solutions for our consideration: 1) virtual machine (VM) such as Virtualbox, 2) container such as Docker/Podman, and 3) sandbox such as Firejail. The primary areas of interest are compared in Table~\ref{tab:security-solutions}\footnote{There are some caveats to the claims listed in this table. For more details please refer to Appendix~\ref{as:comparison-of-security-solutions}.}:
 
 \begin{table}[H]
 \centering
@@ -153,28 +153,36 @@ For security, I compared three mainstream security solutions: 1) virtual machine
 \label{tab:security-solutions}
 \end{table}
 
-
 There are several must-haves for the candidate solution:
 
 \begin{enumerate}
     \item GPU-support. Many recent RL algorithms are practically impossible to run without a GPU. This eliminates VM without PCI passthrough.
-    \item Server needs to be shared. This eliminates VM with PCI passthrough as it requires exclusive access. This also eliminates Podman and Docker, as it prevents the GPU from being shared by any other container with root access.
+    \item Server needs to be shared. This eliminates VM with PCI passthrough as it requires exclusive access. This also eliminates Podman and Docker, as they prevent the GPU from being shared by any other container with root access.
 \end{enumerate}
 
 Therefore, Firejail is the only option left. I built a custom security profile to expose only the necessary file system and devices to processes inside the sandbox. I also used Firejail to impose CPU affinity and RAM usage limit on each sandbox.
 
 \subsection{Resource Awareness}
 \label{ss:aivle-worker-resource-awareness}
+The architecture of aiVLE Worker's resource awareness is illustrated in Figure~\ref{fig:aivle-worker-resource-awareness-arch}. In the following subsections we will discuss the objectives and design of related components, namely \texttt{monitor} and \texttt{warden} modules.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/aivle-worker-resource-awareness-arch.png}
+    \caption{aiVLE Worker Resource Awareness Architecture}
+    \label{fig:aivle-worker-resource-awareness-arch}
+\end{figure}
+
 \subsubsection{Resource Monitoring - \texttt{monitor} module}
 \label{sss:monitor}
-To achieve resource-sensitive load balancing as described in aiVLE Web section, we need to monitor CPU/GPU utilization and RAM/VRAM usage in real-time and control the worker's subscription to the task queue accordingly in real time. Therefore we implement the \texttt{monitor} module inside aiVLE Worker that runs in parallel with the main worker process, which
+To achieve resource-sensitive load balancing as described in Section~\ref{ss:aivle-web-load-balancing}, and to enforce resource limit as described in Section~\ref{sss:warden}, we need to monitor CPU/GPU utilization and RAM/VRAM usage and take actions accordingly. Therefore we implement the \texttt{monitor} module inside aiVLE Worker that runs in parallel with the main worker process, which
 \begin{enumerate}
     \item Monitors the system utilization periodically
     \item Control the worker's task queue subscription according to prefetched threshold
     \item Send monitoring metrics to the \texttt{warden} module to enable resource limit enforcement
 \end{enumerate}
 
-The inter-module/process communication will be discussed shortly in Section~\ref{sss:warden}. The first two objectives can be achieved by the execution flow illustrated in Figure~\ref{fig:aivle-worker-monitor-flow} with the help of \href{https://pypi.org/project/psutil/}{\texttt{psutil}} for CPU/RAM monitoring and \href{https://github.com/fbcotter/py3nvml}{\texttt{py3nvml}} for GPU monitoring.
+The first objective is achieved by the execution flow illustrated in Figure~\ref{fig:aivle-worker-monitor-flow} with the help of \href{https://pypi.org/project/psutil/}{\texttt{psutil}} for CPU/RAM monitoring and \href{https://github.com/fbcotter/py3nvml}{\texttt{py3nvml}} for GPU monitoring. The last objective that involves inter-process communication will be discussed in Figure~\ref{fig:aivle-worker-ipc}.
 
 \begin{figure}[H]
     \centering
@@ -183,11 +191,18 @@ The inter-module/process communication will be discussed shortly in Section~\ref
     \label{fig:aivle-worker-monitor-flow}
 \end{figure}
 
+Now we explain why the \texttt{monitor} module is also responsible for controlling the task queue subscription: due to the limitation of Celery (the distributed task queue library we used to build the evaluation subsystem), the subscription control is unidirectional. In other words, Celery does not allow the worker itself to \emph{pause} \textbf{consuming} tasks - the worker can only \emph{shutdown} itself entirely, and only the master server can pause \textbf{sending} tasks to a certain worker. So now we have two possible designs: either sending monitoring metrics periodically to the master server and let it decide, or prefetch the threshold on startup and request the master server to pause when threshold is violated. The second option is our obvious choice because it incurs much less communication overhead and a fixed, prefetch threshold works fine in our use case.
+
 \subsubsection{Limit Enforcement - \texttt{warden} module}
 \label{sss:warden}
-Celery does not allow the worker itself to stop consuming tasks - the worker can only choose to shutdown itself entirely. And the \texttt{monitor} module is periodically checking the system load, so we need to have the \texttt{warden} module that is responsible for enforcing the resource limits by terminating the job externally and report the reason to aiVLE Web.
+The \texttt{warden} module is responsible for:
+\begin{enumerate}
+    \item Collect task information from \texttt{worker} module
+    \item Collect system resource information from \texttt{monitor} module
+    \item Terminate sandboxes that violates resource restrictions and report to aiVLE Web\footnote{We use ``master server'' and aiVLE Web interchangeably in this report because they are physically running in the same application.}
+\end{enumerate}
 
-There are three modules that run in parallel: worker, monitor and warden. And they need to exchange information in order to collaborate. This is where ZeroMQ~\cite{zeromq} comes handy (again): only the worker knows the mapping from sandbox PID to task information (i.e., VRAM limit), and only the monitor knows the VRAM usage of each process. Both need to send their data to the warden process which oversees all running jobs and terminates jobs that violates restrictions. Figure~\ref{fig:aivle-worker-ipc} shows the inter-process communication among these three:
+Terminating sandboxes and reporting to aiVLE Web is as straightforward as killing the corresponding PID and making an HTTP request. What makes \texttt{warden}'s job challenging is the first two objectives: there are three modules that run in parallel: \texttt{worker}, \texttt{monitor} and \texttt{warden}. And they need to exchange information in order to collaborate. This is where ZeroMQ~\cite{zeromq} comes handy\footnote{...again, see Section~\ref{ss:agent-env-communication}}: only the worker knows the mapping from sandbox PID to task information (i.e., VRAM limit), and only the \texttt{monitor} knows the VRAM usage of each process. Both need to send their data to the \texttt{warden} process which oversees all running jobs and terminates jobs that violates restrictions. Figure~\ref{fig:aivle-worker-ipc} shows the inter-process communication among these three:
 
 \begin{figure}[H]
     \centering
@@ -196,26 +211,27 @@ There are three modules that run in parallel: worker, monitor and warden. And th
     \label{fig:aivle-worker-ipc}
 \end{figure}
 
-For \texttt{warden}'s case, it receives:
-\begin{enumerate}
-    \item (from worker) mapping from sandbox PID to corresponding task information
-    \item (from monitor) VRAM usage of each process
-\end{enumerate}
-Every time it receives an update from the monitor, it goes through the list of active sandboxes, figuring out process hierarchy\footnote{This is necessary as most frameworks like PyTorch will spawn new processes for calculation. Generally the process that is utilizing GPU is no longer the parent process. And there might be multiple processes in the same sandbox that consumes VRAM.} to calculate the total VRAM usage of each sandbox, and finally checks if any sandbox needs to be terminated.
-
+For \texttt{warden}'s case, every time it receives an update from \texttt{monitor}, it goes through the list of active sandboxes, figuring out process hierarchy\footnote{This is necessary as most frameworks like PyTorch will spawn new processes for computation. Generally the process that is directly utilizing GPU is no longer the parent process. And there might be multiple processes in the same sandbox that consumes VRAM. By traversing the process tree recursively, we prevent intentional or unintentional attempts of ``downplaying'' the resource consumption of certain sandboxes.} to calculate the total VRAM usage of each sandbox, and finally checks if any sandbox needs to be terminated.
 
 \section{aiVLE Web - AI competition platform}
 \label{ch:aivle-web}
-aiVLE Web consists of a Django backend that is ~2K LoC and a React frontend that is ~2K LoC. An active instance is deployed on the server and is accessible from \href{https://aivle.leotan.cn/}{https://aivle.leotan.cn/} (frontend) and \href{https://aivle-api.leotan.cn/}{https://aivle-api.leotan.cn/} (API and admin panel).
+aiVLE Web consists of a Django backend that is $\sim$2K LoC and a React frontend that is $\sim$2K LoC. An active instance is deployed on the server and is accessible from \href{https://aivle.leotan.cn/}{https://aivle.leotan.cn/} (frontend) and \href{https://aivle-api.leotan.cn/}{https://aivle-api.leotan.cn/} (API and admin panel).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/aivle-web-frontend-screenshot.png}
+    \caption{aiVLE Web Frontend Screenshots}
+    \label{fig:aivle-web-frontend-screenshot}
+\end{figure}
 
 \subsection{Design Goal}
 There are three primary considerations to the design of aiVLE web: extensibility, scalability, and usability. 
 
-Extensibility means the architecture should be flexible enough for future upgrades including but not limited to multi-agent task competition and real-time match spectate. Scalability means the platform should be able to spread the evaluation workload, which is obviously the most computationally heavy task, over hundreds of worker machines. Usability means the platform should provide all the features the users (e.g., CS4246 teaching team) need for a successful semester of teaching.
+\textbf{Extensibility} means the architecture should be flexible enough for future upgrades including but not limited to multi-agent task competition and real-time match spectate. \textbf{Scalability} means the platform should be able to spread the evaluation workload, which is obviously the most computationally heavy task, over hundreds of worker machines. \textbf{Usability} means the platform should provide all the features the users (e.g., CS4246 teaching team) need for a successful semester of teaching.
 
 \subsection{Highly Available and Fault Tolerant Task Queue}
 \label{ch:aivle-web_highly-available-task-queue}
-This is a continuation of scalability of (grading) workers. In the section for aiVLE worker, we addressed the problem of running the worker on as many computers as possible with as little configuration/permission as possible. Here we address the problem of 1) coordinating the communication between the workers and the backend server, and 2) distributing grading tasks to the workers efficiently for shorter waiting time and higher resource utilization.
+This is a continuation of \hyperref[ss:aivle-worker-design-goal]{scalability of (grading) workers}. In the section for aiVLE worker, we addressed the problem of running the worker on as many computers as possible with as little configuration/permission as possible. Here we address the problem of 1) coordinating the communication between the workers and the backend server, and 2) distributing grading tasks to the workers efficiently for shorter waiting time and higher resource utilization.
 \subsubsection{The Problem}
 In original aiVLE, there was no concept of "task queue". All pending tasks are stored in the DB with the status "QUEUED". Communication between the worker (or runner as per the term used by original author) and server is \textit{half-duplex by polling}. In other words, the worker makes \textbf{periodic} requests to the server for new ungraded submissions:
 \begin{figure}[H]
@@ -233,13 +249,15 @@ There are three critical limitations to this approach:
 \end{enumerate}
 
 \subsubsection{The Solution}
-Similar to the idea of extracting the responsibility of data storage/management into a separate database backend, we delegate the messaging tasks to a message queue. Conceptually, message queue enables asynchronous communication between clients (who submit tasks) and workers (who finish tasks). Below is a diagram illustrating how the MQ-based task queue works:
+Similar to the idea of extracting the responsibility of data storage/management into a separate database backend, we delegate the messaging tasks to a message queue. Conceptually, message queue enables asynchronous communication between clients (who submit tasks) and workers (who finish tasks). As for implementing the concept in our Python web application, we used \href{https://docs.celeryq.dev/en/stable/}{Celery} framework with \href{https://www.rabbitmq.com/}{RabbitMQ} message queue broker/backend. Figure~\ref{fig:aivle-web-mq} illustrates how the MQ-based task queue works:
+
 \begin{figure}[H]
     \centering
     \includegraphics{images/aivle-web-mq.png}
     \caption{Message Queue Based Task Queue}
     \label{fig:aivle-web-mq}
 \end{figure}
+
 Every worker listens to one or more "queues", where the message broker is responsible for allocating tasks fairly among workers in each queue. When an evaluation job comes, aiVLE backend will submit the job to an appropriate queue (i.e., private queue if user has dedicated workers available, otherwise public CPU/GPU queue according to task specification) and wait for the assigned worker to submit evaluation result. The task will remain in the queue until it is processed (i.e., message queue is persistent). A randomly generated task ID is used to authenticate worker's submission – only the worker whom the broker assigned the task will have this ID. This approach not only reduces the number of requests to be $O(n)$ where $n$ is the number of evaluation jobs, but also ensures fair assignment of tasks among workers. Moreover, we also benefit from other standard features of MQ such as automatic retry and heartbeat checks.
 
 \subsection{Resource-sensitive Load Balancing}
@@ -250,11 +268,11 @@ By using message queue for task distribution, we already have some primitive loa
     \item \textbf{Inefficiency}: suppose the task queue is configured to automatically retry the failed job by putting a new evaluation job into the same queue, since worker A is still accepting submissions, the retry attempt may take additional fails to finally arrive at worker B.
 \end{enumerate}
 
-The key to solving such unwanted behavior is 1) to monitor the available system resources, 2) to stop processing new tasks when the available resources fall below certain thresholds. Most of the heavy-lifting is handled on the worker side, for aiVLE Web, it merely uses \texttt{add\_consumer} and \texttt{cancel\_consumer} Celery APIs for resuming and pausing consuming respectively. There are two points to note in this solution:
+The key to solving such unwanted behavior is 1) to monitor the available system resources, 2) to stop processing new tasks when the available resources fall below certain thresholds. Most of the heavy-lifting is handled on the worker side (see Section~\ref{ss:aivle-worker-resource-awareness}), for aiVLE Web, it merely uses \texttt{add\_consumer} and \texttt{cancel\_consumer} Celery APIs for resuming and pausing consuming respectively. Nevertheless, there are two points to note in this solution:
 
 \begin{enumerate}
-    \item It does not cancel already running jobs - it only stops receiving new tasks when the threshold is met. This behavior is acceptable in our case since we only need to promise students with a certain amount of resources to run their submissions. And our solution guarantees\footnote{Technically speaking this guarantee is not true between two checks on system information, but we can easily reduce the impact by performing the check more frequently. In our experience, one second interval is more than enough.} the promised amount of CPU/RAM/VRAM at the beginning of any evaluation job.
-    \item It does not balance the resource utilization among all workers. \texttt{cancel\_consumer} simply removes the worker from the list of consumers to dispatch tasks to. To achieve resource utlization balance, aiVLE Web needs to understand each worker's utlization in real-time and dispatch tasks accordingly. We think the overhead and complexity of this design significantly outweights the potential benefits.
+    \item It does not cancel already running jobs - it only stops dispatching new tasks to the worker where the threshold is met. This behavior is acceptable in our case since we only need to promise students with a certain amount of resources to run their submissions. And our solution guarantees\footnote{Technically speaking, this guarantee does not hold between two checks on system information, but we can easily reduce the impact by performing the check more frequently. In our experience, one second interval is more than enough.} the promised amount of CPU/RAM/VRAM at the beginning of any evaluation job.
+    \item It does not balance the resource utilization among all workers. \texttt{cancel\_consumer} simply removes the worker from the list of consumers to dispatch tasks to. To achieve resource utilization balance, aiVLE Web needs to understand each worker's utilization in real-time and dispatch tasks accordingly. We think the overhead and complexity of this design significantly outweighs the potential benefits.
 \end{enumerate}
 
 \subsection{Role-based Permission Model}

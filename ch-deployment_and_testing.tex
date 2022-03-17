@@ -1,6 +1,6 @@
 \chapter{Deployment and Testing}
 \label{ch:deployment-and-testing}
-As mentioned in Section~\ref{ch:design-and-impl}, aiVLE 2.0, especially aiVLE Worker and aiVLE Grader, is designed to be highly scalable and easy to deploy. However, just like any distributed systems, being able to run the individual components on a single machine is one thing, having all the components cooperate on separate machines to achieve actual distribution is another. Thus, to pave way for future production deployment, and to demonstrate the actual performance of such a distributed system, we performed a complete deployment using several SoC cluster nodes \footnote{Special thanks to the SoC compute cluster admins and Dr. Narayan for their help in securing these very powerful GPU nodes as shown later in Section~\ref{ss:deployment-environment}.} and did several experiments/benchmarks on the system.
+As mentioned in Section~\ref{ch:design-and-impl}, aiVLE 2.0, especially aiVLE Worker and aiVLE Grader, is designed to be highly scalable and easy to deploy. However, just like any distributed systems, being able to run the individual components on a single machine is one thing, having all the components cooperate on separate machines to achieve actual distribution is another. Thus, to pave way for future production deployment, and to demonstrate the actual performance of such a distributed system, we performed a complete deployment using several SoC cluster nodes\footnote{Special thanks to the SoC compute cluster admins and Dr. Narayan for their help in securing these very powerful GPU nodes as shown later in Section~\ref{ss:deployment-environment}.} and did several experiments/benchmarks on the system.
 
 There will be three sections covering both the deployment and tests this chapter: Section~\ref{s:deployment} describes the deployment environment, deployment steps and issues we encountered before making the system fully functional on SoC. Section~\ref{s:load-balance-exp} describes the methodology and findings of load balancing among \textbf{multiple} worker nodes. Section~\ref{s:concurrency-exp} describes the methodology and findings of running evaluation jobs concurrently on a \textbf{single} worker node.
 
@@ -56,8 +56,17 @@ Sat Jan  1 13:32:49 2022
 
 aiVLE Web is deployed on a \href{https://linode.com/}{Linode} Nanode 1GB VPS (virtual private server) with 1 virtual CPU core and 1 GiB of RAM.
 
-\subsection{Steps}
+\subsection{Limitations}
+\label{ss:deployment-limitations}
+There is one additional problem with distributed systems that I did not mention in the introductory paragraph of this chapter: even if the system works on a few machines, it does not necessarily mean the system will work or scale well to dozens or even hundreds of machines. While we design the system to be highly scalable, and the underlying technologies have proven to be effective on hundreds of machines, we are never certain until we actually scale the system to that many nodes and put it under pressure.
 
+Unfortunately, for the time being, we are unable to materialize such a large-scale experiment: SoC compute cluster does not have that many GPU nodes available, nor could I find a demanding enough task to put the system at such a scale under considerable pressure. In fact, on the \texttt{xgpg*} nodes used for this experiment, every evaluation takes $\sim$10 seconds to finish, which is too short for even tens of worker nodes: for the evaluation subsystem to be stressed, we at least need to keep the task queue ``filled''. In other words, the rate of submitting new jobs into the task queue should be much greater than the rate of workers finishing jobs. However, with each job only taking $\sim$10 seconds, suppose we have 50 workers, our rate of consumption would be $50/10=5$ jobs per second (every 10 seconds we can process 50 jobs). If we assume each submission to be $\sim$20MiB\footnote{Many deep learning models are much larger than this, so we are giving a conservative estimation here}, it would require at least 100MiB per second of network speed, which is already approaching the limit of Gigabit Ethernet available on most machines.
+
+Therefore, with our current resources, it is nearly impossible to properly test the scalability potential of aiVLE 2.0. However, this does not mean that our experiments are useless! Quite the contrary, our experiment setup would be very similar to actual resources available for CS4246 teaching team, and we expect aiVLE 2.0 have a much higher utilization rate of computational power - as a result, process submissions with smaller delays.
+
+In short, we remain cautiously optimistic about the scalability of aiVLE 2.0 as we do not yet have experiment data to support it, but we are confident about its capability on supporting CS4246 from the experiments.
+
+\subsection{Steps}
 To simulate the production deployment process, we scrapped the existing setups and started everything afresh. The following steps are sufficient for any deployment from the ground up:
 
 \begin{enumerate}
@@ -70,10 +79,12 @@ To simulate the production deployment process, we scrapped the existing setups a
 
 \subsection{Issues and Solutions}
 There are some issues we found during the deployment process. None of which is critical in a sense that we eventually found workarounds without modifying any existing codebase or design. But we think it is nonetheless useful to point them out here as potential users of this system is likely to encounter some of them as well.
+
 \subsubsection{Switching broker from RabbitMQ to AWS SQS}
-If the worker node resides behind a firewall that restricts access to certain ports (especially under a whitelist policy where only selected ports are available), then you are likely to find RabbitMQ unusable - its underlying protocol, Advanced Message Queuing Protocol (AMQP), uses port 5671/5672 by default. There are two possible solutions:
+If the worker node resides behind a firewall that restricts access to certain ports (especially under a whitelist policy where only selected ports are available), then you are likely to find RabbitMQ unusable - its underlying protocol, Advanced Message Queuing Protocol (AMQP), uses port 5671/5672 by default. There are three possible solutions:
 \begin{enumerate}
     \item Change RabbitMQ port to one that is allowed by the worker node firewall. Do note that AMQP is not based on HTTP/HTTPS, so when change the port to 80/443 you need to ensure that not only the broker server has those ports available, but also the worker node firewall DOES allow non-HTTP traffic via port 80/443.
+    \item Deploy RabbitMQ internally. If the firewall only blocks external access and allows internal access to all ports (like SoC firewall), and all worker nodes reside within the local network, then deploying the RabbitMQ inside the local network would be an uncompromising\footnote{Given you have enough privilege to install RabbitMQ on one of the machines, of course. It also requires root access, which I did not have.} solution.
     \item Switch RabbitMQ to HTTP/HTTPS-based broker such as \href{https://aws.amazon.com/sqs/}{AWS SQS}. Do note that this solution greatly affects the capability of Celery task scheduling - for example, remote worker control is impossible with SQS. As a result, later advanced features like resource-sensitive load balancing would not work under SQS.
 \end{enumerate}
 In our case, the SoC firewall blocks most ports on external IP address, and forcing RabbitMQ to use port 80 was futile. In the end we switched to AWS SQS as a workaround\footnote{It did not affect any existing functionality then - features such as resource-sensitive load balancing came later in the second semester.}.
@@ -103,7 +114,7 @@ This means the author of the task needs to be aware of the CUDA version of their
 
 \section{Load Balance Experiment}
 \label{s:load-balance-exp}
-Raw logs and analyzing scripts can be found in \href{https://github.com/edu-ai/aivle-experiment-logs}{aiVLE Experiment Logs Repo}. For correspondence between experiment setup and log file index, please refer to Table~\ref{tab:load-balance-exp}
+Raw logs and analyzing scripts can be found in \href{https://github.com/edu-ai/aivle-experiment-logs}{aiVLE Experiment Logs}. For correspondence between experiment setup and log file index, please refer to Table~\ref{tab:load-balance-exp}
 
 \begin{table}[H]
 \centering
@@ -131,11 +142,11 @@ Since the evaluation task and all worker nodes are exactly the same, we have fou
 In this section and Section~\ref{s:concurrency-exp}, submission count and concurrency of submission are both 100. This means before the first job is assigned to any of the worker nodes, 100 jobs are already queued. This is to ensure there will always be sufficient tasks for the workers to work on - if concurrency of submission is significantly smaller than the number of submissions, then the rate of submitting job may dictate the rate of workers finishing jobs, which is undesirable for our stress-oriented experiments.
 
 For load balance experiment, we \textbf{fix concurrency on all workers to be 8}, measure \textbf{time taken} to finish 100 submissions with
-\begin{enumerate}
+\begin{itemize}
     \item 1 node (\texttt{xgpg0})
     \item 2 nodes (\texttt{xgpg0,1})
     \item 3 nodes (\texttt{xgpg0,1,2})
-\end{enumerate}
+\end{itemize}
 
 On the master server (aiVLE Web), we logged the critical phases of each submission with a timestamp, in specific, there is a timestamped record when
 \begin{enumerate}

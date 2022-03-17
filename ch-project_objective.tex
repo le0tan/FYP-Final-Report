@@ -1,15 +1,18 @@
 \chapter{Project Objective}
+\label{ch:project-objective}
 \section{Problem Statement}
+\label{s:project-objective-problem-statement}
 The goal of this project is to provide a complete solution for RL algorithm evaluation that is extensible, scalable, and well-documented. It consists of four tightly integrated components (collectively called aiVLE 2.0):
 
 \begin{enumerate}
-    \item aiVLE \footnote{aiVLE is name for the grading system currently used in CS4246, more details about the old aiVLE (aiVLE 1.0) are covered in Section~\ref{ch:literature-review-related-work-ai-competition-platforms}} Gym: An OpenAI Gym \cite{openai-gym} compatible RL environment framework with agent-environment separation and official support for multi-agent tasks.
+    \item aiVLE\footnote{aiVLE is name for the grading system currently used in CS4246, more details about the old aiVLE (aiVLE 1.0) are covered in Section~\ref{ch:literature-review-related-work-ai-competition-platforms}} Gym: An OpenAI Gym \cite{openai-gym} compatible RL environment framework with agent-environment separation and official support for multi-agent tasks.
     \item aiVLE Grader: An auto grading framework for aiVLE Gym tasks.
     \item aiVLE Worker: A security sandbox to execute arbitrary code submissions safely in a controlled environment, and a massively scalable worker client for evaluation.
     \item aiVLE Web: A web application for hosting RL competitions.
 \end{enumerate}
 
 \section{Motivation}
+\label{s:project-objective-motivation}
 Courses like CS4246, which teach AI, and are different from traditional programming/algorithm courses, need a system to automate the process of collecting and evaluating programming assignments on AI tasks. aiVLE (AI Virtual Learning Environment) is the inspiration and foundation of this project – it is an RL task evaluation system built by the CS4246 teaching team since 2019. We will call the old aiVLE as aiVLE 1.0 henceforth\footnote{Do note that aiVLE 1.0 refers to the system as a whole –- it does not refer to any specific component (e.g., web, runner, runner-kit).}. aiVLE 1.0 provides instant feedback on programming assignments that require varied computational power such as GPU or other specialized processing units. However, aiVLE 1.0 has many pain points. For example, it lacks extensibility (e.g., does not support multi-agent task), scalability (e.g., no concurrency safety for many workers), and documentation for more courses to make use of the platform. As for another similar platform called Botzone~\cite{botzone}, although it’s built for external users, limitations like no GPU support and no common interface make it infeasible for many tasks.
 
 Secondly, an open source RL competition platform with good documentation and software engineering best practices has potential impact beyond education purposes. On the one hand, such a platform could also be useful for benchmarking AI algorithms – the consistency required for grading assignments is perfect for comparing research as well. On the other hand, examples like AlphaGo~\cite{alphago} proves the effectiveness of combining supervised learning from past match data with unsupervised RL – match history collected on the platform could be useful for training models for corresponding tasks. 
@@ -17,6 +20,7 @@ Secondly, an open source RL competition platform with good documentation and sof
 Lastly, there is demand for such a platform. Both CS3243 and CS4246 have assignments on RL algorithms. And even for many non-RL chapters such as brute force or informed search, satisfiability problems, the techniques could also be used to solve RL tasks. It is a safe bet that such a platform will benefit many AI courses (including CS2109S and CS3244) by using it alongside platforms like Kaggle to cover most AI algorithm evaluation scenarios.
 
 \section{Roadmap}
+\label{s:project-objective-roadmap}
 There are three stages planned for this project. During the first semester, we delivered satisfactory results for the first two stages. During the winter break, we conducted \hyperref[ch:deployment-and-testing]{real-world deployment and testing} to evaluate the feasibility of advancing the project to the third stage. During the second semester, we focus on fixing problems found during the test, and delivering features as mentioned in the third stage.
 
 \subsection{Stage 1: Framework}
