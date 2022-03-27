@@ -103,6 +103,7 @@
   \newenvironment{acknowledgement}{%
       \titlepage
       \doublespacing
+      \phantomsection
 	  \addcontentsline{toc}{chapter}{Acknowledgement}
       \@beginparpenalty\@lowpenalty
       \begin{center}%
@@ -472,28 +473,28 @@
 \singlespacing
 \thispagestyle{empty}
 \begin{centering}
-% \large
-% \if@urop
-%   Undergraduate Research Opportunity Program\\
-%   (UROP) Project Report \\
-% \else
-%   \if@fyp
-%      B.Comp. Dissertation \\
-%   \else
-%      \errmessage{Unknown project type. Please use option fyp or urop in documentclass}
-%   \fi
-% \fi
-% \vspace{2 cm}
-% \Large \textbf{\@title} \vspace{2 cm} \large \\
-% By \\ \vspace{.5cm}
-% \@author \\
-% \vspace{2 cm} 
-% Department of Computer Science \\  \vspace{.5cm}
-% School of Computing \\ \vspace{.5cm}
-% National University of Singapore \\ \vspace{1cm}
-% \@pjyear \\
-% \vspace{6 cm}
-% \newpage
+\large
+\if@urop
+  Undergraduate Research Opportunity Program\\
+  (UROP) Project Report \\
+\else
+  \if@fyp
+     B.Comp. Dissertation \\
+  \else
+     \errmessage{Unknown project type. Please use option fyp or urop in documentclass}
+  \fi
+\fi
+\vspace{2 cm}
+\Large \textbf{\@title} \vspace{2 cm} \large \\
+By \\ \vspace{.5cm}
+\@author \\
+\vspace{2 cm} 
+Department of Computer Science \\  \vspace{.5cm}
+School of Computing \\ \vspace{.5cm}
+National University of Singapore \\ \vspace{1cm}
+\@pjyear \\
+\vspace{6 cm}
+\newpage
 \setcounter{page}\@ne
 \addcontentsline{toc}{chapter}{Title}
 \thispagestyle{empty}
@@ -760,8 +761,9 @@ Advisor: \@advisor
                                 \normalfont\bfseries #1}
 \if@titlepage
   \newenvironment{abstract}{%
+  \phantomsection
+      \addcontentsline{toc}{chapter}{\abstractname}
       \titlepage
-	  \addcontentsline{toc}{chapter}{\abstractname}
       \singlespacing
       \null\vfil
       \@beginparpenalty\@lowpenalty
@@ -954,6 +956,7 @@ Advisor: \@advisor
 \newcommand*\l@subparagraph{\@dottedtocline{5}{12em}{6em}}
 \newcommand\listoffigures{%
 	\singlespacing
+	\phantomsection
 	\addcontentsline{toc}{chapter}{\listfigurename}
     \chapter*{\listfigurename}%
       \@mkboth{\MakeUppercase\listfigurename}%
@@ -965,6 +968,7 @@ Advisor: \@advisor
 \newcommand*\l@figure{\@dottedtocline{1}{1.5em}{2.3em}}
 \newcommand\listoftables{%
 	\singlespacing
+	\phantomsection
 	\addcontentsline{toc}{chapter}{\listtablename}
     \chapter*{\listtablename}%
       \@mkboth{%
