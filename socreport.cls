@@ -912,6 +912,8 @@ Advisor: \@advisor
 \setcounter{tocdepth}{2}
 \newcommand\tableofcontents{%
 	\singlespacing
+	\phantomsection
+    \addcontentsline{toc}{chapter}{Table of Contents}
     \chapter*{\contentsname
         \@mkboth{%
            \MakeUppercase\contentsname}{\MakeUppercase\contentsname}}%

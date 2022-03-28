@@ -1,12 +1,12 @@
 \chapter{Deployment and Testing}
 \label{ch:deployment-and-testing}
-As mentioned in Section~\ref{ch:design-and-impl}, aiVLE 2.0, especially aiVLE Worker and aiVLE Grader, is designed to be highly scalable and easy to deploy. However, just like any distributed systems, being able to run the individual components on a single machine is one thing, having all the components cooperate on separate machines to achieve actual distribution is another. Thus, to pave way for future production deployment, and to demonstrate the actual performance of such a distributed system, we performed a complete deployment using several SoC cluster nodes\footnote{Special thanks to the SoC compute cluster admins and Dr. Narayan for their help in securing these very powerful GPU nodes as shown later in Section~\ref{ss:deployment-environment}.} and did several experiments/benchmarks on the system.
+As mentioned in Section~\ref{ch:design-and-impl}, aiVLE 2.0, especially aiVLE Worker and aiVLE Grader, is designed to be highly scalable and easy to deploy. However, just like any distributed systems, being able to run the individual components on a single machine is one thing, having all the components cooperate on separate machines to achieve actual distribution is another. Thus, to pave way for production deployment in the next academic year, and to demonstrate the actual performance of such a distributed system, we performed a complete deployment using several SoC cluster nodes\footnote{Special thanks to the SoC compute cluster admins and Dr. Narayan for their help in securing these very powerful GPU nodes as shown later in Section~\ref{ss:deployment-environment}.} and did several experiments/benchmarks on the system.
 
-There will be three sections covering both the deployment and tests this chapter: Section~\ref{s:deployment} describes the deployment environment, deployment steps and issues we encountered before making the system fully functional on SoC. Section~\ref{s:load-balance-exp} describes the methodology and findings of load balancing among \textbf{multiple} worker nodes. Section~\ref{s:concurrency-exp} describes the methodology and findings of running evaluation jobs concurrently on a \textbf{single} worker node.
+There will be three sections covering both the deployment and tests this chapter: Section~\ref{s:deployment} describes the deployment environment, deployment steps and issues we encountered before making the system fully functional on SoC compute cluster. Section~\ref{s:load-balance-exp} describes the methodology and findings of load balancing among \textbf{multiple} worker nodes. Section~\ref{s:concurrency-exp} describes the methodology and findings of running evaluation jobs concurrently on a \textbf{single} worker node.
 
 \section{Deployment}
 \label{s:deployment}
-Note that this deployment happened during the winter break (Nov 2021 to Jan 2022). Therefore some later updates to the aiVLE Web and Worker are not included during this deployment (most notably, the resource-sensitive load balancing related features). However, this should not affect the later mentioned test results as the experiments are designed to have no system overloading (see Section \ref{sss:choice-of-params}).
+Note that this deployment happened during the winter break (November 2021 to January 2022). Therefore some later updates to the aiVLE Web and Worker are not included during this deployment (most notably, the resource-sensitive load balancing). However, this does not affect the later mentioned test results as the experiments are designed to have no system overloading (see Section \ref{sss:choice-of-params}).
 
 In specific, the exact versions used are (Git commit hash with GitHub link):
 \begin{itemize}
@@ -58,23 +58,23 @@ aiVLE Web is deployed on a \href{https://linode.com/}{Linode} Nanode 1GB VPS (vi
 
 \subsection{Limitations}
 \label{ss:deployment-limitations}
-There is one additional problem with distributed systems that we did not mention in the introductory paragraph of this chapter: even if the system works on a few machines, it does not necessarily mean the system will work or scale well to dozens or even hundreds of machines. While we design the system to be highly scalable, and the underlying technologies have proven to be effective on hundreds of machines, we are never certain until we actually scale the system to that many nodes and put it under pressure.
+There is one additional problem with distributed systems that we did not mention in the introductory paragraph of this chapter: even if the system works on a few machines, it does not necessarily mean the system will work or scale well to dozens or even hundreds of machines. While we design the system to be highly scalable, and the underlying technologies (i.e., Celery as Python library and RabbitMQ as message queue broker) have proven to be effective on hundreds of machines, we are never certain until we actually scale the system to that many nodes and put it under pressure.
 
-Unfortunately, for the time being, we are unable to materialize such a large-scale experiment: SoC compute cluster does not have that many GPU nodes available (for a final year project at least), nor did we have a demanding enough task to put the system at such a scale under considerable pressure. In fact, on the \texttt{xgpg*} nodes used for this experiment, every evaluation takes $\sim$10 seconds to finish, which is too short for even tens of worker nodes: for the evaluation subsystem to be stressed, we at least need to keep the task queue ``filled''. In other words, the rate of submitting new jobs into the task queue should be much greater than the rate of workers finishing jobs. However, with each job only taking $\sim$10 seconds, suppose we have 50 workers, our rate of consumption would be $50/10=5$ jobs per second (every 10 seconds we can process 50 jobs). If we assume each submission to be $\sim$20MiB\footnote{Many deep learning models are much larger than this, so we are giving a conservative estimation here}, it would require at least 100MiB per second of network speed, which is already approaching the limit of Gigabit Ethernet available on most machines.
+Unfortunately, for the time being, we are unable to materialize such a large-scale experiment: SoC compute cluster does not have that many GPU nodes available (for a final year project at least), nor did we have a demanding enough task to put the system at such a scale under considerable pressure. In fact, on the \texttt{xgpg*} nodes used for this experiment, every evaluation takes $\sim$10 seconds to finish, which is too short for even tens of worker nodes: for the evaluation subsystem to be stressed, we at least need to keep the task queue ``filled''. In other words, the rate of submitting new jobs into the task queue should be much greater than the rate of workers finishing jobs. However, with each job only taking $\sim$10 seconds, suppose we have 50 workers, our rate of consumption would be $50/10=5$ jobs per second (every 10 seconds we can process 50 jobs). If we assume each submission to be $\sim$20MiB\footnote{Many deep learning models are much larger, so we are having a relatively conservative estimation here}, it would require at least 100MiB per second of network throughput, which is already approaching the limit of Gigabit Ethernet available on most machines.
 
 Therefore, with our current resources, it is nearly impossible to properly test the scalability potential of aiVLE 2.0. However, this does not mean that our experiments are useless! Quite the contrary, our experiment setup is on par with the resources available to CS4246 teaching team, and we expect aiVLE 2.0 to have a much higher utilization rate of computational power - as a result, process submissions with smaller delays.
 
 In short, we are cautiously optimistic about the scalability of aiVLE 2.0 as we do not yet have experiment data to support it, but we are confident that it can support CS4246 teaching much more effectively from the experiment results as shown in Section~\ref{s:load-balance-exp} and Section~\ref{s:concurrency-exp}.
 
 \subsection{Steps}
-To simulate the production deployment process, we scrapped the existing setups and started everything afresh. The following steps are sufficient for any deployment from the ground up:
+To simulate the production deployment process, we scrapped existing setups and started everything afresh. The following steps are sufficient for any deployment from the ground up:
 
 \begin{enumerate}
     \item Prepare the message queue broker: either by installing \href{https://www.rabbitmq.com/}{RabbitMQ} or using cloud message queue provider such as \href{https://www.cloudamqp.com/}{CloudAMQP}. In our case, we installed RabbitMQ on the same VPS with aiVLE Web.
-    \item Install and start aiVLE Web on the VPS.  \href{https://github.com/edu-ai/aivle-web#readme}{aiVLE Web Readme} describes this process in detail.
+    \item Install and start aiVLE Web on the VPS.  The aiVLE Web ``readme'' (\href{https://github.com/edu-ai/aivle-web#readme}{https://github.com/edu-ai/aivle-web\#readme}) is the definitive guide on this process.
     \item Setup the users, courses, tasks in aiVLE Web via its RESTful API or Django admin panel.
     \item Prepare the worker nodes with necessary dependencies (i.e., Firejail, Pip, Virtualenv, CUDA drivers). In our case, we requested the cluster admins to install Firejail as all other dependencies are already available.
-    \item Install and start aiVLE Worker on the worker nodes. \href{https://github.com/edu-ai/aivle-worker#readme}{aiVLE Worker Readme} describes this process in detail.
+    \item Install and start aiVLE Worker on the worker nodes. aiVLE Worker ``readme'' (\href{https://github.com/edu-ai/aivle-worker#readme}{https://github.com/edu-ai/aivle-worker\#readme}) describes this process in detail.
 \end{enumerate}
 
 \subsection{Issues and Solutions}
@@ -114,7 +114,15 @@ This means the author of the task needs to be aware of the CUDA version of their
 
 \section{Load Balance Experiment}
 \label{s:load-balance-exp}
-Raw logs and analyzing scripts can be found in \href{https://github.com/edu-ai/aivle-experiment-logs}{aiVLE Experiment Logs}. For correspondence between experiment setup and log file index, please refer to Table~\ref{tab:load-balance-exp}
+In this section, we will discuss the experiments about load balancing evaluation jobs among \textbf{multiple} worker nodes. There are three objectives for this series of experiments:
+
+\begin{enumerate}
+    \item Show that performance scales well horizontally to several\footnote{As mentioned in Section~\ref{ss:deployment-limitations}, we are well aware that 3 nodes are too few to claim the horizontal scalability. So we used ``several'' instead of ``many''. However the other objectives should not be affected: properties like fair distribution and small worker overhead remain stable regardless of the number of nodes.} worker nodes
+    \item Show that tasks are distributed evenly among worker nodes
+    \item Show that worker nodes are fully utilized during stressful load
+\end{enumerate}
+
+Raw logs and analyzing scripts can be found in \href{https://github.com/edu-ai/aivle-experiment-logs}{aiVLE experiment logs repository}\footnote{\href{https://github.com/edu-ai/aivle-experiment-logs}{https://github.com/edu-ai/aivle-experiment-logs}}. For correspondence between experiment setup and log file index, please refer to Table~\ref{tab:load-balance-exp}
 
 \begin{table}[H]
 \centering
@@ -173,7 +181,7 @@ For the total submissions to finish, more submissions means the average number i
 \subsection{Results}
 \label{ss:load-balancing-exp-results}
 
-For the performance of load balancing, below are the times for each test case:
+First, for the performance of load balancing, below are the times for each test case:
 \begin{itemize}
     \item 1 node: 235.426s (baseline)
     \item 2 nodes: 128.261s (91.78\%)
@@ -181,13 +189,13 @@ For the performance of load balancing, below are the times for each test case:
 \end{itemize}
 The percentage is the scaling efficiency defined by $\frac{\text{Optional time}}{\text{Measured time}}$ where \emph{Optimal Time} is defined as (take $N$ as the number of nodes, $t_0$ as the time taken with one node) $\frac{t_0}{N} \times 100\%$.
 
-For the fairness of load balancing, below are the number of jobs assigned to each worker node (when there are more than one node).
+Second, for the fairness of load balancing, below are the number of jobs assigned to each worker node (when there are more than one node).
 \begin{itemize}
     \item 2 nodes: \texttt{\{'celery@xgpg0': 50, 'celery@xgpg1': 50\}}
     \item 3 nodes: \texttt{\{'celery@xgpg0': 34, 'celery@xgpg1': 36, 'celery@xgpg2': 30\}}
 \end{itemize}
 
-For the utilization of system resources, since our task is GPU-bound, below is the GPU and VRAM utilization plot of one of the worker nodes (others are similar):
+Third, for the utilization of system resources, since our task is GPU-bound, Figure~\ref{fig:experiment-lb-utilization-plot} plots the GPU and VRAM utilization for one of the worker nodes (others are similar).
 
 \begin{figure}[H]
     \centering
@@ -198,7 +206,9 @@ For the utilization of system resources, since our task is GPU-bound, below is t
 
 \section{Concurrency Experiment}
 \label{s:concurrency-exp}
-Raw logs and analyzing scripts can be found in \href{https://github.com/edu-ai/aivle-experiment-logs}{aiVLE Experiment Logs Repo}.For correspondence between experiment setup and log file index, please refer to Table~\ref{tab:concurrency-exp}
+In this section, we will discuss the experiments about running multiple evaluation jobs \textbf{concurrently} on a \textbf{single} worker node. The objective is to show that our worker node can process multiple submissions in parallel with linear scalability.
+
+Raw logs and analyzing scripts can be found in \href{https://github.com/edu-ai/aivle-experiment-logs}{aiVLE experiment logs repository}\footnote{\href{https://github.com/edu-ai/aivle-experiment-logs}{https://github.com/edu-ai/aivle-experiment-logs}}.For correspondence between experiment setup and log file index, please refer to Table~\ref{tab:concurrency-exp}
 
 \begin{table}[H]
 \centering

@@ -15,6 +15,7 @@
 \usepackage{longtable}
 \usepackage{amsmath}
 % \usepackage{tocbibind}
+\interfootnotelinepenalty=10000 %% Completely prevent breaking of footnotes
 
 \begin{document}
 \pagenumbering{roman}
@@ -29,7 +30,7 @@
 }
 \maketitle
 \begin{abstract}
-Entering the second decade of the 21st century, machine learning and artificial intelligence is the new must-have for computer science education. However, while the data-oriented tasks like classification and regression have well-adopted platforms such as Kaggle, simulation-oriented tasks that are most common for reinforcement learning (RL) algorithms are yet to have a feature-complete online judging solution. This project aims to build a complete solution that is extensible, scalable, and easy-to-use. It covers four critical components of judging RL algorithms: a simulation environment framework, an auto-grading framework, a scalable and secure sandbox for arbitrary code execution, and finally a modern web application as the entry point. Besides a comprehensive documentation and many quality-of-life new features and improvements, this project greatly improves the performance over existing internal platform with a task queue system that not only distributes tasks fairly, but also dynamically adapts to the load of each worker node thanks to its resource awareness. Experimental results show that the new system provides fair task distribution among worker nodes and nearly three times of resource utilization improvement over aiVLE 1.0 ($>90\%$ vs $\approx 30\%$).
+Entering the second decade of the 21st century, machine learning and artificial intelligence is the new must-have for computer science education. However, while the data-oriented tasks like classification and regression have well-adopted platforms such as Kaggle, simulation-oriented tasks that are most common for reinforcement learning (RL) algorithms are yet to have a feature-complete online judging solution. This project aims to build a complete solution that is extensible, scalable, and easy-to-use. It covers four critical components of judging RL algorithms: a simulation environment framework, an auto-grading framework, a scalable and secure sandbox for arbitrary code execution, and finally a modern web application as the entry point. Besides a comprehensive documentation and many quality-of-life new features, this project greatly improves the performance over existing internal platform (aiVLE 1.0) with a task queue system that not only distributes tasks fairly, but also dynamically adapts to the load of each worker node thanks to its resource awareness. Experimental results show that the new system provides equal task distribution among worker nodes and nearly three times of resource utilization improvement over aiVLE 1.0 ($>90\%$ vs $\approx 30\%$).
 
 \begin{project-nature}
 	Implementation, Experimentation, Simulation
@@ -45,7 +46,7 @@ Entering the second decade of the 21st century, machine learning and artificial 
 \end{abstract}
 
 \begin{acknowledgement}
-I would like to thank my friends and family for their support during the hard times of the COVID-19 pandemic, and thanks to my significant other for her patiently listening to my annoyingly frequent mentions of this project in the past year.\\
+I would like to thank my friends and family for their support during the hard times of the COVID-19 pandemic, especially my significant other for her patiently listening to my annoyingly frequent mentions of this project.\\
 I would also like to thank my advisors Dr. Narayan and Prof. Leong. They offered an unimaginable amount of guidance to this final year project with great kindness.\\
 Without them, this project would not have been possible.\\
 \end{acknowledgement}
