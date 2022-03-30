@@ -1,6 +1,7 @@
 \NeedsTeXFormat{LaTeX2e}[1995/12/01]
 \ProvidesClass{socreport}
               [2001/04/21 v1.4e NUS SoC FYP/UROP Report Class]
+\usepackage{setspace}
 \newcommand\@ptsize{}
 \newif\if@restonecol
 \newif\if@titlepage
@@ -112,11 +113,11 @@
       \end{center}}%
      {\par\vfil\null\endtitlepage}
 
-\newcommand{\singlespacing}{%
+\renewcommand{\singlespacing}{%
   \let\CS=\@currsize\renewcommand{\baselinestretch}{1.0}\tiny\CS}
 \newcommand{\singlespacingplus}{%
   \let\CS=\@currsize\renewcommand{\baselinestretch}{1.25}\tiny\CS}
-\newcommand{\doublespacing}{%
+\renewcommand{\doublespacing}{%
   \let\CS=\@currsize\renewcommand{\baselinestretch}{1.75}\tiny\CS}
 \newcommand{\realdoublespacing}{%
   \let\CS=\@currsize\renewcommand{\baselinestretch}{2}\tiny\CS}
@@ -845,6 +846,7 @@ Advisor: \@advisor
   \gdef\@chapapp{\appendixname}%
   \gdef\thechapter{\@Alph\c@chapter}
   \@addtoreset{page}{chapter}% reset page number when chapter is stepped
+  \singlespacingplus
 }
 \setlength\arraycolsep{5\p@}
 \setlength\tabcolsep{6\p@}

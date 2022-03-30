@@ -223,9 +223,9 @@ Terminating sandboxes and reporting to aiVLE Web is as straightforward as killin
 
 For \texttt{warden}'s case, every time it receives an update from \texttt{monitor}, it goes through the list of active sandboxes, queries the process hierarchy\footnote{This is necessary as most frameworks like PyTorch will spawn new processes for computation. Generally the process that is directly utilizing GPU is no longer the parent process. And there might be multiple processes in the same sandbox that consumes VRAM. By traversing the process tree recursively, we prevent intentional or unintentional attempts of ``downplaying'' the resource consumption of certain sandboxes.} to calculate the total VRAM usage of each sandbox, and finally checks if any sandbox needs to be terminated.
 
-\section{aiVLE Web - AI competition platform}
+\section{aiVLE Web - AI Competition Platform}
 \label{ch:aivle-web}
-aiVLE Web consists of a Django backend that is $\sim$2.5K LoC and a React frontend that is $\sim$2K LoC. An active instance is deployed on the server and is accessible from \href{https://aivle.leotan.cn/}{https://aivle.leotan.cn/} (frontend) and \href{https://aivle-api.leotan.cn/}{https://aivle-api.leotan.cn/} (API and admin panel). Figure~\ref{fig:aivle-web-frontend-screenshot} shows a few screenshots of the React frontend. Do note that we used mobile-sized screenshots due to limited space, but the design is responsive (i.e., it adapts to different screen sizes).
+aiVLE Web consists of a Django backend that is $\sim$2.5K LoC and a React frontend that is $\sim$2K LoC. An active instance is deployed on the server and is accessible from \href{https://aivle.leotan.cn/}{https://aivle.leotan.cn/} (frontend) and \href{https://aivle-api.leotan.cn/}{https://aivle-api.leotan.cn/} (API and admin panel). Figure~\ref{fig:aivle-web-frontend-screenshot} shows a few screenshots of the React frontend. Note that we used mobile-sized screenshots due to limited space, but the design is responsive (i.e., it adapts to different screen sizes).
 
 \begin{figure}[H]
     \centering
@@ -237,11 +237,11 @@ aiVLE Web consists of a Django backend that is $\sim$2.5K LoC and a React fronte
 \subsection{Design Goal}
 There are three primary considerations to the design of aiVLE web: extensibility, scalability, and usability. 
 
-\textbf{Extensibility} means the architecture should be flexible enough for future upgrades including but not limited to multi-agent task competition. Due to space limit we refrain from discussing the software engineering choices that are in favor of extensibility, but you may take a sneak peek at how to extend the existing system from Appendix~\ref{appendix:aivle-web_matchmaking}: \nameref{appendix:aivle-web_matchmaking}.
+\textbf{Extensibility} means the architecture should be extensible enough for future upgrades. The most significant architectural change on the web backend\footnote{...besides the new evaluation subsystem as mentioned in Section~\ref{ch:aivle-worker} and later in Section~\ref{ch:aivle-web_highly-available-task-queue})} is frontend-backend separation\footnote{Frontend-backend separation means, instead of having Django render HTML pages directly, after the separation, Django only provides APIs to read/write data, while the React frontend takes the responsibility of rendering the data into interactive webpages.}. This allows sophisticated data processing without making the backend codebase and API bloated - we will discuss one such scenario (course administration) in Section~\ref{ss:aivle-cli} for a tool named aiVLE CLI. In addition, to demonstrate the extensibility of our database model, we prepared a proposal on how to extend the existing codebase to support multi-agent competition (see Appendix~\ref{appendix:aivle-web_matchmaking}).
 
 \textbf{Scalability} means the platform should be able to spread the evaluation workload, which is obviously the most computationally heavy task, over many worker machines. We will discuss this objective in detail with 1) highly available and fault tolerant task queue (Section~\ref{ch:aivle-web_highly-available-task-queue}) and 2) resource-sensitive load balancing (Section~\ref{ss:aivle-web-load-balancing}).
 
-\textbf{Usability} means the platform should provide all the features the users (e.g., CS4246 teaching team) need for a successful semester of teaching. While there are many features we could discuss, also due to space limit, we pick the role-based permission model (Section~\ref{ss:aivle-web-permission-model}) as an typical example of how we carefully balance complexity and flexibility during the development process.
+\textbf{Usability} means the platform should provide all the features the users (e.g., CS4246 teaching team) need for a successful semester of teaching. While there are many features we could discuss, also due to space limit, we pick the role-based permission model (Section~\ref{ss:aivle-web-permission-model}) as a typical example of how we carefully balance complexity and flexibility during the development process.
 
 \subsection{Highly Available and Fault Tolerant Task Queue}
 \label{ch:aivle-web_highly-available-task-queue}
@@ -329,3 +329,26 @@ By introducing the \texttt{Participation} relational entity and \texttt{has\_per
 \caption{Partial Permission Lookup Table}
 \label{tab:aivle-web-permission-table}
 \end{table}
+
+\subsection{aiVLE CLI - Course Administration Utility}
+\label{ss:aivle-cli}
+
+aiVLE CLI is an interactive command-line tool written in $\sim$ 500 lines of Go code. It is cross-compiled\footnote{Cross-compilation means using platform A to build a binary that runs on platform B.} to native binary on both Windows, Linux and macOS (Intel + Apple Silicon) so that the facilitators can enjoy the same convenience on any platform they prefer. Users make use of this program by answering questions and selecting choices as shown in Figure~\ref{fig:aivle-cli}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/aivle-cli.png}
+    \caption{aiVLE CLI Usage}
+    \label{fig:aivle-cli}
+\end{figure}
+
+There are two reasons behind building a separate application for course administration on the client side instead of integrating all these functionalities into aiVLE Web. First, it is easier to develop a command-line program compared with both a backend API (logic) and corresponding web frontend (user interface). For a command-line app, work required for the user interface is negligible and we only need to focus on delivering the logic. Second, KISS (keep it simple, stupid) principle. Ideally, if a complex functionality can be implemented with several smaller yet more general operations without significant performance or usability penalty, we should avoid providing such a complex API and let the caller do the composition\footnote{Actually, besides simplifying the API schema, this approach may lead to better performance: for example, instead of adding a new API for the backend to zip all requested submissions into one download, by making individual requests for every submission, we can parallelize the requests for a higher throughput.}. Note that such composition is impossible without frontend-backend separation, since before the separation the only way of interacting with the data is to use the website, and the website itself, while friendly to us humans, is not as useful as raw data to computer programs.
+
+Currently the aiVLE CLI has 4 features:
+
+\begin{enumerate}
+    \item Download submissions: given a task, you may download all submissions (evaluation result included) or only those are marked for grading.
+    \item Download evaluation results: given a task, you may download a CSV file with username, grade, and evaluation details.
+    \item Upload student emails to the course whitelist: the utility can parse and upload student roster Excel file exported from LumiNUS.
+    \item Get API token from username and password.
+\end{enumerate}
