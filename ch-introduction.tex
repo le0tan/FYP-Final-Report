@@ -1,6 +1,6 @@
 \chapter{Introduction}
 
-With the increasing popularity in both artificial intelligence (AI) research and industry application, more and more institutions are considering AI education as an integral part of their computer science or even general education curriculum. However, in spite of the algorithmic nature of AI education, there are surprisingly few platforms and tools to host AI competitions/assignments and automatically grade the submissions. Unlike traditional algorithms and data structure courses that have many online judges available (to name a few, \href{https://codeforces.com/}{Codeforces}, \href{https://open.kattis.com/}{Kattis}, \href{https://onlinejudge.org/}{UVa Online Judge}), AI courses often rely on arbitrary grading scripts or in-house solutions to host their assignments/contests. There are well-known data science competition platforms like \href{https://www.kaggle.com/}{Kaggle} that are suitable for prediction/classification tasks, but the area of reinforcement learning (RL) tasks\footnote{To be precise, here tasks mean environments that are typically used for RL algorithms. The differentiating characteristic of such tasks is that they are interactive (in contrast to comparing the output against the ground truth like what Kaggle and other traditional online judges do).} remains surprisingly untouched. Therefore, this project tries to fill the gap of evaluating algorithms that solve interactive tasks. We aim to provide a complete solution from building RL\footnote{The evaluation model we use is suitable for almost all AI/ML tasks (including classification and regression), but we will focus on RL first in this case.} environments, writing test cases, to eventually hosting these tasks on a massively scalable platform.
+With the increasing popularity in both artificial intelligence (AI) research and industry application, more and more institutions are considering AI education as an integral part of their computer science or even general education curriculum. However, in spite of the algorithmic nature of AI education, there are surprisingly few platforms and tools to host AI competitions/assignments and automatically grade the submissions. Unlike traditional algorithms and data structure courses that have many online judges available (to name a few, \href{https://codeforces.com/}{Codeforces}, \href{https://open.kattis.com/}{Kattis}, \href{https://onlinejudge.org/}{UVa Online Judge}), AI courses often rely on arbitrary grading scripts or in-house solutions to host their assignments/contests. There are well-known data science competition platforms like \href{https://www.kaggle.com/}{Kaggle} that are suitable for prediction/classification tasks, but the area of reinforcement learning (RL) tasks\footnote{To be precise, here tasks mean environments that are typically used for RL algorithms. The differentiating characteristic of such tasks is that they are interactive (in contrast to comparing the output against the ground truth like what Kaggle and other traditional online judges do).} remains surprisingly untouched. Therefore, this project tries to fill the gap of evaluating algorithms that solve interactive tasks. We aim to provide a complete solution from building RL\footnote{The evaluation model we use is suitable for almost all AI/ML tasks (including classification and regression), but we will focus on RL in this case.} environments, writing test cases, to eventually hosting these tasks on a massively scalable platform.
 
 \section{Background}
 \subsection{Reinforcement Learning Tasks}
@@ -14,8 +14,8 @@ From the definition of sequential decision problems, we can summarize the follow
 
 \begin{figure}[H]
     \centering
-    \includegraphics{images/obr-loop.png}
-    \caption{Action-observation-reward loop}
+    \includegraphics[width=0.35\textwidth]{images/obr-loop.png}
+    \caption{Action-observation-reward Loop}
     \label{fig:obr-loop}
 \end{figure}
 
@@ -24,18 +24,23 @@ In other words, the environment implements the transition model $P\left(s_j\midd
 \section{Related Work}
 
 \subsection{Reinforcement Learning Environment Frameworks And Collections}
-RL research, like many computer science topics, requires concretizing the theory with implementation and experiments as they are equally important. That is where RL environment frameworks and collections like the Arcade Learning Environment (ALE)~\parencite{ale} and OpenAI Gym~\parencite{openai-gym} come into play. Such an effort is incredibly important for the rapid growth of the RL community: it not only saves researchers a lot of emulation development time, but also provides benchmark environments to evaluate RL tasks similar to how CIFAR-10~\parencite{cifar-10} provides benchmark datasets in image classification. A typical OpenAI Gym agent code is structured as below:
+RL research, like many computer science topics, requires concretizing the theory with implementation and experiments as they are equally important. That is where RL environment frameworks and collections like the Arcade Learning Environment (ALE)~\parencite{ale} and OpenAI Gym~\parencite{openai-gym} come into play. Such an effort is incredibly important for the rapid growth of the RL community: it not only saves researchers a lot of emulation development time, but also provides benchmark environments to evaluate RL tasks similar to how CIFAR-10~\parencite{cifar-10} provides benchmark datasets in image classification.
+
+Besides collecting many classical environments as a benchmark package, an important contribution of OpenAI Gym is its widely accepted application programming interface (API). This common interface (see Code~\ref{code:gym-agent}) proves to be sufficient for not only hundreds of self-contained environments included in OpenAI Gym, but also many more third-party environments. When it comes to turning retro video games to RL environments, ALE eventually adopted Gym's API and merge into Gym. Moreover, Gym Retro \parencite{gym-retro} adds even more emulated systems such as Nintendo Game Boy and Sega Genesis to the Gym ecosystem. Therefore, it is safe to say that following this interface gives us enough flexibility to implement most of the desired environments.
+
+From the source code of OpenAI Gym, a compatible environment needs to implement the methods and attributes shown in Figure~\ref{fig:gym-class}:
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{images/gym-class.png}
+    \caption{OpenAI Gym Class Diagram}
+    \label{fig:gym-class}
+\end{figure}
+
+These abstractions (i.e., \texttt{action\_space}, \texttt{observation\_space} and \texttt{step(action)}) are in line with the academic definition of sequential decision problems (SDP). Thus, in the following example of a typical OpenAI Gym agent program (Code~\ref{code:gym-agent}), there is also a loop structure similar to the action-observation-reward loop in SDPs (Figure~\ref{fig:openai-gym-obr-loop}):
 
 \begin{code}
-\begin{minted}[
-frame=lines,
-framesep=2mm,
-baselinestretch=1.2,
-bgcolor=LightGray,
-fontsize=\footnotesize,
-linenos,
-samepage
-]{python}
+\begin{minted}[frame=lines,framesep=2mm,baselinestretch=1.2,bgcolor=LightGray,fontsize=\footnotesize,linenos,samepage,highlightlines={6-8}]{python}
 import gym
 
 env = gym.make('CartPole-v0')
@@ -46,22 +51,18 @@ for i_episode in range(100):
         observation, reward, done, info = env.step(action)
 env.close()
 \end{minted}
-\captionof{listing}{OpenAI Gym agent example}
+\captionof{listing}{OpenAI Gym Agent Example}
 \label{code:gym-agent}
 \end{code}
 
-Besides collecting many classical environments as a benchmark package, an important contribution of OpenAI Gym is its widely accepted application programming interface (API). This common interface proves to be sufficient for not only hundreds of self-contained environments included in OpenAI Gym, but also many more third-party environments. When it comes to turning retro video games to RL environments, ALE eventually adopted Gym's API and merge into Gym. Moreover, Gym Retro \parencite{gym-retro} adds even more emulated systems such as Nintendo Game Boy and Sega Genesis to the Gym ecosystem. Therefore, it is safe to say that following this interface gives us enough flexibility to implement most of the desired environments.
-
-From the source code of OpenAI Gym, a compatible environment needs to implement the methods and attributes shown in Figure~\ref{fig:gym-class}:
-
 \begin{figure}[H]
     \centering
-    \includegraphics{images/gym-class.png}
-    \caption{OpenAI Gym Class Diagram}
-    \label{fig:gym-class}
+    \includegraphics[width=0.5\textwidth]{images/openai-gym-obr-loop.png}
+    \caption{Action-observation-reward Loop in OpenAI Gym}
+    \label{fig:openai-gym-obr-loop}
 \end{figure}
 
-Authors of OpenAI Gym listed multi-agent as a future direction when they published the paper in 2016. However, as of 2021, there is still no official support for multi-agent tasks. There are some third-party environments that support multi-agent tasks, like ma-gym \parencite{magym}. These implementations usually convert multi-agent observation, reward, and action into a vector, length of which is equal to the number of participating agents in the environment.
+Since this project is supposed to be designed for future multi-agent task support from ground up, we also looked into the multi-agent environment support of OpenAI Gym: although authors of OpenAI Gym listed it as a future direction when they published the paper in 2016, as of 2022, there is still no official support for multi-agent tasks. There are some third-party environments that support multi-agent tasks, like ma-gym \parencite{magym}. These implementations usually convert multi-agent observation, reward, and action into a vector, length of which is equal to the number of participating agents in the environment.
 
 \subsection{Online Judging System}
 Online judges first emerged to address the problem of automatically grading programming assignments conveniently, fairly and securely \parencite{RN4}. Without any manual intervention after the system is configured properly, online judge systems need to handle 1) receiving submissions, 2) compiling and executing source codes, 3) comparing outputs against the correct answers, and 4) logging the result. For fairness, RAM and CPU usage will be monitored and limited. Usually, there is a hard time limit after which any submission will be forced to terminate. For security, execution of arbitrary submission needs to be contained in a safe environment with heavily restricted privilege levels such that only necessary operations are allowed. Any other attempt (e.g., accessing the network, read/write on filesystem, etc.) will be blocked and preferably reported to the system administrator. 
@@ -77,7 +78,7 @@ With the rapid growth of cloud and distributed computing, there are also novel o
 \begin{figure}[H]
     \centering
     \includegraphics{images/metaoj.png}
-    \caption{MetaOJ architecture \parencite{metaoj}}
+    \caption{MetaOJ Architecture \parencite{metaoj}}
     \label{fig:metaoj}
 \end{figure}
 

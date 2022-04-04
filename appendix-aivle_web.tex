@@ -68,7 +68,7 @@ Now that we have a powerful abstraction of tournaments, we are ready to describe
 There are two new models required for multi-agent matchmaking: \texttt{MatchParticipant}, \texttt{MatchmakingSession}. In addition, we need a \texttt{Match} wrapper class to represent the list of participants involved in a match. However, unlike the other two models that need to be stored in the database, \texttt{Match} is temporary. The concrete implementation of these models is shown in Code~\ref{code:multi-agent-models}.
 
 \begin{code}
-\begin{minted}[frame=lines,framesep=2mm,baselinestretch=1.2,bgcolor=LightGray,fontsize=\footnotesize,linenos,breaklines]{python}
+\begin{minted}[frame=lines,framesep=2mm,baselinestretch=1.2,bgcolor=LightGray,fontsize=\footnotesize,linenos,breaklines,samepage]{python}
 from django.db import models
 
 class MatchParticipant(models.Model):
@@ -103,7 +103,7 @@ Match is a list of submission IDs corresponding to the participants of this matc
 As shown in Section~\ref{as:matchmaking-api_design-overview}, the decision-making of the entire matchmaking process is abstracted as the \texttt{kickstart} and \texttt{schedule} method of a \texttt{Matchmaker}. This is exactly where the tournament rules and/or matchmaking algorithm should be implemented. Below is an abstract base class for \texttt{Matchmaker}:
 
 \begin{code}
-\begin{minted}[frame=lines,framesep=2mm,baselinestretch=1.2,bgcolor=LightGray,fontsize=\footnotesize,linenos,breaklines]{python}
+\begin{minted}[frame=lines,framesep=2mm,baselinestretch=1.2,bgcolor=LightGray,fontsize=\footnotesize,linenos,breaklines,samepage]{python}
 class BaseMatchmaker():
 """
 Matchmaker class must be stateless - every time a new instance of Matchmaker will be created.

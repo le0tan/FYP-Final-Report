@@ -19,7 +19,7 @@ I have released a stable version of aiVLE Gym with all planned features implemen
 aiVLE Gym makes multi-agent competition possible by separating agents from the environment. In a two-agent OpenAI Gym\parencite{openai-gym} task, we write agent code as shown in Code~\ref{code:two-agent-example}:
 
 \begin{code}
-\begin{minted}[frame=lines,framesep=2mm,baselinestretch=1.2,bgcolor=LightGray,fontsize=\footnotesize,linenos]{python}
+\begin{minted}[frame=lines,framesep=2mm,baselinestretch=1.2,bgcolor=LightGray,fontsize=\footnotesize,linenos,samepage]{python}
 env = gym.make("PongDuel-v0") # Two-player Ping Pong game
 
 for ep_i in range(100):
@@ -64,7 +64,7 @@ The design goal of aiVLE Gym is to keep full compatibility with OpenAI Gym on th
 In single-agent case, on the agent side, traditional environment (simulation happens within agent process) and aiVLE environment (simulation happens outside of agent process) should be interchangeable. On the environment side, author can reuse existing OpenAI Gym compatible environment by implementing a serializer that serializes \texttt{action}, \texttt{observation}, and \texttt{info} to JSON compatible objects (Code~\ref{code:aivle-gym-serializer}).
 
 \begin{code}
-\begin{minted}[frame=lines,framesep=2mm,baselinestretch=1.2,bgcolor=LightGray,fontsize=\footnotesize,linenos,breaklines,samepage]{python}
+\begin{minted}[frame=lines,framesep=2mm,baselinestretch=1.2,bgcolor=LightGray,fontsize=\footnotesize,linenos,breaklines,samepage,highlightlines={7-11,14-15}]{python}
 class CartPoleEnvSerializer(EnvSerializer):
     def action_to_json(self, action):
         return action
@@ -210,7 +210,7 @@ The architecture of aiVLE Worker's resource awareness is illustrated in Figure~\
 
 \subsubsection{Resource Monitoring - \texttt{monitor} module}
 \label{sss:monitor}
-To achieve resource-sensitive load balancing as described in a later Section~\ref{ss:aivle-web-load-balancing}, and to enforce resource limit as described in Section~\ref{sss:warden}, we need to monitor CPU/GPU utilization and RAM/VRAM usage and take actions accordingly. Therefore we implement the \texttt{monitor} module inside aiVLE Worker that runs in parallel with the main worker process. The \texttt{monitor} module
+To achieve resource-sensitive load balancing, and to enforce resource limit, we need to monitor CPU/GPU utilization and RAM/VRAM usage and take actions accordingly. Therefore we implement the \texttt{monitor} module inside aiVLE Worker that runs in parallel with the main worker process. The \texttt{monitor} module:
 \begin{enumerate}
     \item Monitors the system utilization periodically
     \item Controls the worker's task queue subscription according to prefetched threshold

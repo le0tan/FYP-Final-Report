@@ -2,19 +2,18 @@
 \usepackage[hidelinks]{hyperref}
 \usepackage{graphicx} % to insert images
 \usepackage{float}
-%%% code block setups
+%%% code block setups begin
 \usepackage[newfloat]{minted}
 \usepackage{xcolor} % to access the named colour LightGray
 \definecolor{LightGray}{gray}{0.9}
 \usepackage{caption}
 \newenvironment{code}{\captionsetup{type=listing}}{}
 \SetupFloatingEnvironment{listing}{name=Code}
-%%% code block setups
+%%% code block setups end
 \usepackage{fullpage}
 \usepackage{multirow}
 \usepackage{longtable}
 \usepackage{amsmath}
-% \usepackage{tocbibind}
 \interfootnotelinepenalty=10000 %% Completely prevent breaking of footnotes
 \usepackage{indentfirst}
 %%% citation
@@ -22,6 +21,13 @@
 \addbibresource{socreport.bib}
 %%% footnote counter
 \counterwithout{footnote}{chapter}
+%%% reuse figure
+\newcommand{\repeatcaption}[2]{%
+  \renewcommand{\thefigure}{\ref{#1}}%
+  \captionsetup{list=no}%
+  \caption{#2 (repeated from page \pageref{#1})}%
+  \addtocounter{figure}{-1}% So that next figure after the repeat gets the right number.
+}
 
 \begin{document}
 \pagenumbering{roman}
@@ -69,8 +75,6 @@ Without the support of many people, this final year project would not have been 
 \include{ch-deployment_and_testing}
 \include{ch-conclusion}
 
-% \bibliographystyle{apacite}
-% \bibliography{socreport}
 \renewcommand{\bibname}{References}
 \setstretch{1}
 \setlength\bibitemsep{1.75\itemsep}
@@ -84,9 +88,6 @@ Without the support of many people, this final year project would not have been 
 \include{appendix-aivle_gym}
 \include{appendix-aivle_worker}
 \include{appendix-aivle_web}
+\include{appendix-deployment_issues}
 
-% \chapter{Proofs}
-% In this appendix, we present alternate, longer, but more interesting proof 
-% of correctness of our algorithm.  This proof is based on induction and proof
-% by contradiction.
 \end{document}

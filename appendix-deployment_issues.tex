@@ -1,0 +1,32 @@
+\chapter{Deployment Issues and Solutions}
+\label{appendix:deployment-issues}
+
+\section{RabbitMQ May Be Blocked by the Firewall}
+If the worker node resides behind a firewall that restricts access to certain ports (especially under a whitelist policy where only selected ports are available), then you are likely to find RabbitMQ unusable - its underlying protocol, Advanced Message Queuing Protocol (AMQP), uses port 5671/5672 by default. There are three possible solutions:
+\begin{enumerate}
+    \item Change RabbitMQ port to one that is allowed by the worker node firewall. Do note that AMQP is not based on HTTP/HTTPS, so before changing the port to 80/443 you need to ensure that not only the broker server has those ports available, but also that both the master server's and worker nodes' firewall allows non-HTTP traffic via port 80/443.
+    \item Deploy RabbitMQ internally. If the firewall only blocks external access and allows internal access to all ports (like SoC firewall), and all worker nodes reside within the local network, then deploying the RabbitMQ inside the local network would be an uncompromising\footnote{Given you have enough privilege to install RabbitMQ on one of the machines, which I did not have at the time of these experiments. In late March 2022, Dr. Narayan finally managed to have SoC approve an instance with \texttt{sudo} root access for me, and we confirmed this approach works as expected internally.} solution.
+    \item Switch RabbitMQ to HTTP/HTTPS-based broker such as \href{https://aws.amazon.com/sqs/}{AWS SQS}. Do note that this solution greatly affects the capability of Celery task scheduling - for example, remote worker control is impossible with SQS. As a result, later advanced features like resource-sensitive load balancing would not work under SQS.
+\end{enumerate}
+In our case, the SoC firewall blocks most ports on external IP address, and forcing RabbitMQ to use port 80 was futile. In the end we switched to AWS SQS as a workaround. It did not affect any existing functionality then - features such as resource-sensitive load balancing came later in the second semester.
+
+\section{Firejail Version Requirement}
+Firejail security profile is not forward compatible, and the latest Firejail version is determined by the OS version, therefore the default security profile of aiVLE Worker does not work on  \texttt{xgpd0} which has Ubuntu 16.04 installed. It works as expected on both Ubuntu 18.04 and Ubuntu 20.04 with their latest Firejail version respectively.
+
+To avoid future confusions, we listed Ubuntu 20.04 and Firejail 0.9.62 as requirements for aiVLE Worker on its Read-me.
+
+\section{PyTorch Installation Issue with Latest nVIDIA GPU}
+Although it has been two years since the launch of RTX 30-series GPU\footnote{The same applies to data center GPUs launched after RTX 30-series, such as nVIDIA A100 used in our deployment.}, PyTorch official PIP channel still has not supported CUDA 11 (which is the minimum CUDA version for 30-series GPU). So instead of 
+\begin{code}
+\begin{minted}[frame=lines,framesep=2mm,baselinestretch=1.2,bgcolor=LightGray,fontsize=\footnotesize,samepage]{shell}
+pip3 install torch torchvision torchaudio
+\end{minted}
+\end{code}
+, we need to use
+\begin{code}
+\begin{minted}[frame=lines,framesep=2mm,baselinestretch=1.2,bgcolor=LightGray,fontsize=\footnotesize,breaklines,samepage]{shell}
+pip3 install torch==1.10.1+cu113 torchvision==0.11.2+cu113 torchaudio==0.10.1+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html
+\end{minted}
+\end{code}
+
+This means the author of the task needs to be aware of the CUDA version of their allocated grading machines, and adjust their \texttt{requirements.txt} accordingly.
