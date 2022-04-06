@@ -84,6 +84,15 @@
 			   											\itemsep \z@
 														  \parsep \z@}}
                {\endlist}
+\newenvironment{subject-descriptor}
+               {\parindent 0em
+			   \vspace{1cm}Subject Descriptors: \list{}{\itemindent 1.5em%
+			   											\leftmargin 0em%
+														\topsep 0em%
+			   											\listparindent \z@
+			   											\itemsep \z@
+														  \parsep \z@}}
+               {\endlist}
 \newenvironment{project-nature}[1]
                {\parindent 0em
 			   \parsep \z@

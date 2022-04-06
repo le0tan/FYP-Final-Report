@@ -2,10 +2,10 @@
 \label{ch:project-objective}
 \section{Problem Statement}
 \label{s:project-objective-problem-statement}
-The goal of this project is to provide a complete solution for RL algorithm evaluation that is extensible, scalable, and easy-to-use. It consists of four tightly integrated components (collectively called aiVLE 2.0):
+The goal of this project is to provide a complete solution for RL algorithm evaluation that is extensible, scalable, and easy-to-use. It consists of four tightly integrated components (collectively called aiVLE 2.0\footnote{Do note that aiVLE 2.0 refers to the new system architecture \textbf{as a whole}~–~every sub-project has an independent versioning that does not necessarily share the major revision number 2 because components like aiVLE Gym and aiVLE Grader do not exist in aiVLE 1.0.}):
 
 \begin{enumerate}
-    \item aiVLE\footnote{aiVLE is name for the grading system currently used in CS4246, more details about the old aiVLE (aiVLE 1.0) are covered in Section~\ref{ch:literature-review-related-work-ai-competition-platforms}} Gym: An OpenAI Gym \parencite{openai-gym} compatible RL environment framework with agent-environment separation and official support for multi-agent tasks.
+    \item aiVLE Gym: An OpenAI Gym \parencite{openai-gym} compatible RL environment framework with agent-environment separation and official support for multi-agent tasks.
     \item aiVLE Grader: An auto grading framework for aiVLE Gym tasks.
     \item aiVLE Worker: A security sandbox to execute arbitrary code submissions safely in a resource restricted environment. And a massively scalable worker client for evaluation.
     \item aiVLE Web: A web application for hosting RL competitions.
@@ -25,7 +25,7 @@ There are three stages planned for this project. During the first semester, we d
 
 \subsection{Stage 1: Framework}
 Before developing the web platform for hosting the competitions, we first need frameworks for 1) creating environment and 2) evaluating agent’s performance – \hyperref[ch:aivle-gym]{aiVLE Gym} and \hyperref[ch:aivle-grader]{Grader} respectively. These frameworks are independent from the web platform, therefore could be used separately for other education or research purposes as well.
-Besides being a platform-independent framework, a security sandbox, \hyperref[ch:aivle-worker]{aiVLE Worker}, is also necessary for hosting competitions. These three frameworks will be implemented in the mentioned order as the latter have dependency on the former.
+Besides these two platform-independent frameworks, a security sandbox named \hyperref[ch:aivle-worker]{aiVLE Worker}, is also necessary for hosting competitions. These three components will be implemented in the mentioned order as the latter have dependency on the former.
 
 \subsection{Stage 2: Platform}
 With the frameworks ready, the second stage is to have \hyperref[ch:aivle-web]{a web platform} that achieves basic online judge functionality, which includes but is not limited to: 1) user registration and authentication, 2) creating/joining courses, 3) creating/modifying/submitting tasks, 4) showing the evaluation result. The target of this stage is to have a \emph{minimum viable product} that CS4246 can use to host single-agent assignments with GPU-accelerated evaluation.

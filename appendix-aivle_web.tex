@@ -1,13 +1,13 @@
 \chapter{Proposal for a Multi-agent Tournament System}
 \label{appendix:aivle-web_matchmaking}
 
-In the previous version of aiVLE 2.0, we already have infrastructure for running arbitrary evaluation as a Job instance. Here we propose an extension to support multi-agent on aiVLE (both matchmaking and evaluation).
+In the previous version of aiVLE 2.0, we already have infrastructure for running arbitrary evaluation as a \texttt{Job} instance. Here we propose an extension to support multi-agent tournament on aiVLE (both matchmaking and evaluation).
 
-This design is very high-level and abstract: even though all relevant code is concrete and runnable, the matchmaking algorithm/strategy, which happens to be the most important and sophisticated part of matchmaking, is not provided. On the other hand, this also means that our design is not limited to any specific tournament type or matchmaking algorithm.
+This design is very high-level and abstract: even though all relevant code is concrete and runnable, the matchmaking algorithm/strategy, which happens to be the most important and sophisticated part of tournament systems, is not provided. On the other hand, this also means that our design is not limited to any specific tournament type or matchmaking algorithm.
 
 \section{Tournament Abstraction}
 \label{as:matchmaking-api_design-tournament_abstraction}
-Before we dive into the actual API design, we need to understand what is common to all tournament. A tournament consists of one or many rounds of matches. The participants in every match of a certain round are determined before the round starts, and the order of matches within a round does not matter. After every round, we determine whether the tournament has concluded, or generate the match schedule for the next round.
+Before we dive into the actual API design, we need to understand what is common to all tournaments. A tournament consists of one or many rounds of matches. The participants in every match of a certain round are determined before the round starts, and the order of matches within a round does not matter. After every round, we determine whether the tournament has concluded, or generate the match schedule for the next round.
 
 Here we show the generality of such description by applying it to a real-world championship series: the Overwatch League (OWL)\footnote{The Overwatch League is a professional e-sports league for the video game Overwatch. Its structure and operation is similar to other American sports championships such as NBA (National Basketball Association).} championship:
 
@@ -36,7 +36,7 @@ Global finals are double elimination.
     \item Round 6: (global) match 6 - the tournament final
 \end{itemize}
 
-In fact, this description of tournament is so powerful that when we let every round to include only one match, we can implement general skill-rating algorithms such as Elo Rating.
+In fact, this description of tournament is so powerful that when we let every round to include only one match, we can implement general skill-rating algorithms such as Elo Rating~\parencite{elo1978rating}.
 
 \section{API Design}
 \label{as:matchmaking-api_design}
@@ -52,7 +52,7 @@ Now that we have a powerful abstraction of tournaments, we are ready to describe
     \end{itemize}
     \item A \texttt{MatchmakingSession} object is created and stored in DB
     \item \texttt{kickstart} method of the \texttt{MatchmakingSession}'s \texttt{Matchmaker} is called. We get a list of \texttt{MatchParticipant}s and \texttt{Match}es. We store the \texttt{MatchParticipant}s and schedule the \texttt{Match}es just like scheduling single-agent evaluation jobs.
-    \item Every call to \texttt{submit\_job} RESTful API will trigger a signal\footnote{Signal is a trigger mechanism in Django. For more details, please check \href{https://docs.djangoproject.com/en/4.0/topics/signals/}{https://docs.djangoproject.com/en/4.0/topics/signals/}} to check if the job has a corresponding \texttt{MatchmakingSession}\footnote{For backward compatibility (i.e., supporting evaluation jobs that is not part of any tournament), we allow a \texttt{Job} to have no corresponding \texttt{MatchmakingSession}.}:
+    \item Every call to \texttt{submit\_job} RESTful API will trigger a signal\footnote{For more details, please check \href{https://docs.djangoproject.com/en/4.0/topics/signals/}{https://docs.djangoproject.com/en/4.0/topics/signals/}} to check if the job has a corresponding \texttt{MatchmakingSession}\footnote{For backward compatibility (i.e., supporting evaluation jobs that is not part of any tournament), we allow a \texttt{Job} to have no corresponding \texttt{MatchmakingSession}.}:
     \begin{enumerate}
         \item If yes, check if all \texttt{pending\_jobs} in the \texttt{MatchmakingSession} are finished
         \item If also yes, call \texttt{schedule} method of the \texttt{MatchmakingSession}'s \texttt{Matchmaker} instance
@@ -65,7 +65,7 @@ Now that we have a powerful abstraction of tournaments, we are ready to describe
 \end{enumerate}
 
 \subsection{Models}
-There are two new models required for multi-agent matchmaking: \texttt{MatchParticipant}, \texttt{MatchmakingSession}. In addition, we need a \texttt{Match} wrapper class to represent the list of participants involved in a match. However, unlike the other two models that need to be stored in the database, \texttt{Match} is temporary. The concrete implementation of these models is shown in Code~\ref{code:multi-agent-models}.
+There are two new models required for multi-agent tournament: \texttt{MatchParticipant} and \texttt{MatchmakingSession}. In addition, we need a \texttt{Match} wrapper class to represent the list of participants involved in a match. However, unlike the other two models that need to be stored in the database, \texttt{Match} is temporary. The concrete implementation of these models is shown in Code~\ref{code:multi-agent-models}.
 
 \begin{code}
 \begin{minted}[frame=lines,framesep=2mm,baselinestretch=1.2,bgcolor=LightGray,fontsize=\footnotesize,linenos,breaklines,samepage]{python}
@@ -88,7 +88,7 @@ Match is a list of submission IDs corresponding to the participants of this matc
     def __init__(self, ids: List[int]):
         self.ids = ids
 \end{minted}
-\captionof{listing}{Multi-agent Matchmaking Models}
+\captionof{listing}{Multi-agent Tournament Models}
 \label{code:multi-agent-models}
 \end{code}
 

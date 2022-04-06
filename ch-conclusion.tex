@@ -5,15 +5,15 @@
 \label{s:conclusion-summary}
 We started this project in pursuit of a complete solution for RL algorithm evaluation that is extensible, scalable, and easy-to-use, which are critical for the success of such a platform. During the two semesters of this final year project, we
 \begin{itemize}
-    \item implemented RL environment framework that supports agent-environment separation and multi-agent competition.
-    \item provided automated and secure evaluation for RL tasks.
-    \item design and deployed distributed evaluation subsystem based on message queue.
-    \item improved the web application for hosting competitions by 1) restructuring code, 2) comprehensive documentation, 3) adding new features (e.g., email verification, password reset, invitation token, course whitelist, etc.).
+    \item implemented RL environment framework that supports agent-environment separation and multi-agent competition;
+    \item provided automated and secure evaluation for RL tasks;
+    \item designed and deployed distributed evaluation subsystem based on message queue;
+    \item improved the web application for hosting competitions by 1) restructuring code, 2) writing comprehensive documentation, and 3) adding new features (e.g., email verification, password reset, invitation token, course whitelist, etc.).
 \end{itemize}
 
 For the RL environment framework, we have invited another FYP student Ho Hol Yin for an early adoption in his project ``A unified testbed for AI teaching and research''. The feedback has been positive especially in terms of OpenAI Gym compatibility.
 
-For the evaluation subsystem, we deployed the system to SoC compute cluster during the winter break and performed several performance experiments. We have validated the fair distribution of evaluation jobs, achieved up to 3 times of utilization improvement over the previous solution and demonstrated the new system’s scaling capability of supporting CS4246.
+For the evaluation subsystem, we deployed the system to SoC compute cluster during the winter break and performed several performance experiments. We have validated the fair distribution of evaluation jobs, achieved up to 3 times of utilization improvement over the previous solution and demonstrated the new system’s scaling capability of supporting CS4246 teaching.
 
 For the competition-hosting web platform, by working with Dr. Narayan closely, we have addressed most of the pain points from CS4246 teaching team. More importantly, the documentation is now sufficient for fresh deployments and future upgrades/maintenance.
 
@@ -25,14 +25,14 @@ First, as mentioned in Section~\ref{ss:deployment-limitations}, due to limited r
 
 Second, aiVLE 2.0 platform does not provide multi-agent competition support. We started with aiVLE Gym that works great for multi-agent competitions, but once we try to extend aiVLE Web to support multi-agent tasks, we encountered much more difficulties than we anticipated. Most notably, we found it challenging to implement a skill rating and tournament system that balances efficiency and fairness. Nevertheless, we managed to implement the infrastructure and abstractions for the tournament system (see Appendix~\ref{appendix:aivle-web_matchmaking}), and we definitely hope to materialize the proposal by implementing actual tournament algorithms on top of the infrastructure in the future.
 
-Lastly, although I emphasized the importance of maintainability repeatedly in this project by adopting many software engineering best practices such as comprehensive documentation and maintainable architecture, there is still some room for improvement, especially on the frontend code – unlike backend development that I am familiar with, this project is my first serious attempt with frontend development. Looking at the codebase after a year of experience, we think the frontend code needs considerable refactoring to achieve similar level of maintainability as the backend.
+Lastly, although I emphasized the importance of maintainability repeatedly in this project by adopting many software engineering best practices such as comprehensive documentation and maintainable architecture, there is still some room for improvement, especially on the frontend code – unlike backend development that I am familiar with, this project is my first serious attempt with frontend development. Looking at the codebase after a year of experience, we think the frontend code needs some refactoring to achieve similar level of maintainability as the backend.
 
 \section{Future Work}
 \label{s:conclusion-future_work}
-Instead of calling aiVLE 2.0 a finished project, we think it is more appropriate to call it a foundation of a truly comprehensive AI competition platform. Our efforts in improving the project's maintainability are not only for the operation of CS4246 assignment grading, but also for the future upgrades from whoever interested in making aiVLE even more advanced.
+aiVLE 2.0 has the potential to be an even more comprehensive AI competition platform. Our efforts in improving the project's maintainability are not only for the operation of CS4246 assignment grading, but also for the future upgrades from whoever is interested in making the platform even more advanced.
 
-In particular, as mentioned in Section~\ref{s:conclusion-limitations}, a concrete implementation of multi-agent tournament and skill rating system would be a huge upgrade - it opens up the possibility of multi-agent competition that is more interactive and competitive.
+In particular, a concrete implementation of multi-agent tournament and skill rating system would be a huge upgrade - it opens up the possibility of multi-agent competition that is more interactive and competitive.
 
-For the evaluation subsystem, we feel there is still room for improvement with respect to the load balancing strategy - currently we distribute tasks fairly by round-robin, and pauses assigning new jobs to nodes that are under pressure. However, if we managed to solve the significant communication overhead of reporting utilization data to the master server in real-time, we could implement some load balancing algorithm that balances the system load among the workers.
+For the evaluation subsystem, we feel there is still room for improvement with respect to the load balancing strategy - currently we distribute tasks fairly by round-robin, and pauses assigning new jobs to nodes that are under pressure. However, if we managed to solve the significant communication overhead of reporting utilization data to the master server in real-time, we could implement some load balancing algorithm that balances the real system load among the workers.
 
-And of course, as mentioned in Chapter~\ref{ch:design-and-impl}, aiVLE Gym is designed to function independently outside of aiVLE platform. Its capability of separating environment from agents could be useful for academic research in, say, human-in-the-loop machine learning. Besides AI education, we hope to see more application of these frameworks in the world of RL research, including but not limited to multi-agent experiments built with aiVLE Gym, and benchmarks packaged with aiVLE Grader.
+Lastly, since aiVLE Gym is designed to function independently outside of aiVLE platform, its capability of separating environment from agents could be useful for academic research in, for example, human-in-the-loop machine learning. Besides AI education, we hope to see more application of these frameworks in the world of RL research, including but not limited to multi-agent experiments built with aiVLE Gym, and benchmarks packaged with aiVLE Grader.
